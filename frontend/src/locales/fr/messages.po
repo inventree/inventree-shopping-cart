@@ -1,0 +1,144 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2025-08-05 13:54+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: fr\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#: src/Panel.tsx
+msgid "Add to Cart"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Item added to cart"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Edit Cart Item"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Cart item updated"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Remove Cart Item"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Item removed from cart"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Create Purchase Order"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Create"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Select a supplier to create a new purchase order, or select an existing pending purchase order to add these items to."
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Converted items will be removed from the shopping cart."
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Purchase Order Updated"
+msgstr ""
+
+#. placeholder {0}: response.reference
+#: src/Panel.tsx
+msgid "Items added to purchase order {0}"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Part"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "IPN"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Description"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Supplier Part"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Quantity"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Required Date"
+msgstr ""
+
+#: src/Panel.tsx
+#: src/Panel.tsx
+msgid "Project Code"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Reason"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Requested By"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Created"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "My Requests"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Show requests made by me"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Has Supplier Part"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Show requests which specify a supplier part"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Supplier"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Show requests which can be ordered from a supplier"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Filter by project code"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "View Part"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Create purchase order from selected items"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Add item to cart"
+msgstr ""

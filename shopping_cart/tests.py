@@ -1,0 +1,283 @@
+"""Unit tests for the ShoppingCart plugin."""
+
+from decimal import Decimal
+
+from django.contrib.auth.models import User
+
+from common.models import InvenTreeSetting, ProjectCode
+from company.models import Company, SupplierPart
+from InvenTree.unit_test import InvenTreeAPITestCase
+from order.models import PurchaseOrder
+from order.status_codes import PurchaseOrderStatus
+from part.models import Part
+from plugin import registry
+
+from .models import ShoppingCartEntry
+
+CART_URL = "/plugin/shopping-cart/cart/"
+CONVERT_URL = "/plugin/shopping-cart/cart/convert/"
+
+
+class ShoppingCartTestMixin:
+    """Common test data for the shopping cart tests."""
+
+    @classmethod
+    def setUpTestData(cls):
+        """Enable the plugin, and create parts, suppliers and project codes."""
+        super().setUpTestData()
+
+        # Plugin URLs must be enabled, and the registry reloaded, for the API to be available
+        InvenTreeSetting.set_setting("ENABLE_PLUGINS_URL", True, None)
+        registry.reload_plugins()
+        registry.set_plugin_state("shopping-cart", True)
+
+        cls.part = Part.objects.create(
+            name="Resistor", description="A resistor", purchaseable=True
+        )
+        cls.cable = Part.objects.create(
+            name="Cable", description="A cable", purchaseable=True
+        )
+        cls.assembly = Part.objects.create(
+            name="Assembly", description="Not purchaseable", purchaseable=False
+        )
+
+        cls.supplier = Company.objects.create(name="Supplier A", is_supplier=True)
+        cls.other_supplier = Company.objects.create(name="Supplier B", is_supplier=True)
+
+        cls.sp_a = SupplierPart.objects.create(
+            part=cls.part, supplier=cls.supplier, SKU="RES-A"
+        )
+        cls.sp_b = SupplierPart.objects.create(
+            part=cls.part, supplier=cls.other_supplier, SKU="RES-B"
+        )
+
+        # Cable is sold in packs of 10
+        cls.sp_cable = SupplierPart.objects.create(
+            part=cls.cable, supplier=cls.supplier, SKU="CBL-10", pack_quantity="10"
+        )
+
+        cls.project = ProjectCode.objects.create(code="PRJ-001")
+
+        cls.other_user = User.objects.create_user(username="other", password="password")
+
+
+class ShoppingCartEntryTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
+    """Tests for creating and editing cart entries."""
+
+    roles = ["purchase_order.view"]
+
+    def test_permission_required(self):
+        """Users without purchase order access cannot use the cart."""
+        self.clearRoles()
+        self.get(CART_URL, expected_code=403)
+
+    def test_create(self):
+        """Create a cart entry - the user is assigned automatically."""
+        response = self.post(
+            CART_URL,
+            {
+                "part": self.part.pk,
+                "quantity": 5,
+                "reason": "For the prototype",
+                "project_code": self.project.pk,
+                "target_date": "2026-12-01",
+                "user": self.other_user.pk,
+            },
+        )
+
+        entry = ShoppingCartEntry.objects.get(pk=response.data["pk"])
+
+        self.assertEqual(entry.user, self.user)
+        self.assertEqual(entry.quantity, 5)
+        self.assertEqual(entry.project_code, self.project)
+        self.assertIsNotNone(entry.created)
+
+        response = self.get(CART_URL)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["part_detail"]["name"], "Resistor")
+
+    def test_options(self):
+        """Form metadata is available to users with purchase order 'view' access."""
+        response = self.options(CART_URL, expected_code=200)
+        self.assertIn("POST", response.data["actions"])
+
+        # Conversion requires 'add' permission
+        response = self.options(CONVERT_URL, expected_code=200)
+        self.assertNotIn("POST", response.data.get("actions", {}))
+
+        self.assignRole("purchase_order.add")
+        response = self.options(CONVERT_URL, expected_code=200)
+        self.assertIn("POST", response.data["actions"])
+        self.assertIn("items", response.data["actions"]["POST"])
+
+    def test_validation(self):
+        """Invalid entries are rejected."""
+        # Non-purchaseable part
+        response = self.post(
+            CART_URL, {"part": self.assembly.pk, "quantity": 1}, expected_code=400
+        )
+        self.assertIn("part", response.data)
+
+        # Zero quantity
+        response = self.post(
+            CART_URL, {"part": self.part.pk, "quantity": 0}, expected_code=400
+        )
+        self.assertIn("quantity", response.data)
+
+        # Supplier part for a different part
+        response = self.post(
+            CART_URL,
+            {"part": self.part.pk, "supplier_part": self.sp_cable.pk, "quantity": 1},
+            expected_code=400,
+        )
+        self.assertIn("supplier_part", response.data)
+
+    def test_edit_permissions(self):
+        """Users can edit their own entries, but not those of other users."""
+        mine = ShoppingCartEntry.objects.create(
+            part=self.part, quantity=1, user=self.user
+        )
+        theirs = ShoppingCartEntry.objects.create(
+            part=self.part, quantity=1, user=self.other_user
+        )
+
+        self.patch(f"{CART_URL}{mine.pk}/", {"quantity": 3})
+        self.patch(f"{CART_URL}{theirs.pk}/", {"quantity": 3}, expected_code=403)
+        self.delete(f"{CART_URL}{theirs.pk}/", expected_code=403)
+        self.delete(f"{CART_URL}{mine.pk}/")
+
+        # Purchasing users can edit any entry
+        self.assignRole("purchase_order.change")
+        self.patch(f"{CART_URL}{theirs.pk}/", {"quantity": 3})
+
+    def test_filters(self):
+        """Test the custom list filters."""
+        ShoppingCartEntry.objects.create(part=self.part, quantity=1, user=self.user)
+        ShoppingCartEntry.objects.create(
+            part=self.cable, quantity=1, user=self.other_user
+        )
+        ShoppingCartEntry.objects.create(
+            part=self.part, supplier_part=self.sp_b, quantity=1, user=self.other_user
+        )
+
+        self.assertEqual(len(self.get(CART_URL, {"mine": True}).data), 1)
+        self.assertEqual(len(self.get(CART_URL, {"mine": False}).data), 2)
+        self.assertEqual(len(self.get(CART_URL, {"has_supplier_part": True}).data), 1)
+
+        # Supplier A can supply the first two entries (but not the third, which specifies supplier B)
+        response = self.get(CART_URL, {"supplier": self.supplier.pk})
+        self.assertEqual(len(response.data), 2)
+
+        response = self.get(CART_URL, {"supplier": self.other_supplier.pk})
+        self.assertEqual(len(response.data), 2)
+
+
+class ShoppingCartConvertTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
+    """Tests for converting cart entries into a purchase order."""
+
+    roles = ["purchase_order.view", "purchase_order.add"]
+
+    def test_convert_new_order(self):
+        """Convert entries into a new purchase order."""
+        e1 = ShoppingCartEntry.objects.create(
+            part=self.part,
+            quantity=4,
+            user=self.other_user,
+            reason="Urgent",
+            project_code=self.project,
+        )
+        e2 = ShoppingCartEntry.objects.create(
+            part=self.cable, quantity=25, user=self.user, project_code=self.project
+        )
+
+        # Not selected - should remain in the cart
+        e3 = ShoppingCartEntry.objects.create(part=self.part, quantity=1)
+
+        response = self.post(
+            CONVERT_URL, {"items": [e1.pk, e2.pk], "supplier": self.supplier.pk}
+        )
+
+        order = PurchaseOrder.objects.get(pk=response.data["pk"])
+
+        self.assertEqual(order.supplier, self.supplier)
+        self.assertEqual(order.created_by, self.user)
+        self.assertEqual(order.project_code, self.project)
+        self.assertEqual(order.lines.count(), 2)
+
+        line = order.lines.get(part=self.sp_a)
+        self.assertEqual(line.quantity, 4)
+        self.assertEqual(line.notes, "Urgent")
+        self.assertEqual(line.project_code, self.project)
+        self.assertIn("other", line.reference)
+
+        # 25 units in packs of 10 = 3 packs
+        line = order.lines.get(part=self.sp_cable)
+        self.assertEqual(line.quantity, Decimal(3))
+
+        self.assertFalse(ShoppingCartEntry.objects.filter(pk__in=[e1.pk, e2.pk]))
+        self.assertTrue(ShoppingCartEntry.objects.filter(pk=e3.pk).exists())
+
+    def test_convert_existing_order(self):
+        """Convert entries into an existing pending purchase order."""
+        order = PurchaseOrder.objects.create(supplier=self.other_supplier)
+        entry = ShoppingCartEntry.objects.create(part=self.part, quantity=2)
+
+        self.post(CONVERT_URL, {"items": [entry.pk], "order": order.pk})
+
+        self.assertEqual(order.lines.count(), 1)
+        self.assertEqual(order.lines.first().part, self.sp_b)
+
+        # Placed orders cannot be selected
+        order.status = PurchaseOrderStatus.PLACED.value
+        order.save()
+
+        entry = ShoppingCartEntry.objects.create(part=self.part, quantity=2)
+        response = self.post(
+            CONVERT_URL, {"items": [entry.pk], "order": order.pk}, expected_code=400
+        )
+        self.assertIn("order", response.data)
+
+    def test_convert_errors(self):
+        """Conversion fails if a supplier part cannot be determined."""
+        # Specifies a supplier part from supplier B
+        e1 = ShoppingCartEntry.objects.create(
+            part=self.part, supplier_part=self.sp_b, quantity=1
+        )
+
+        # Cable has no supplier part from supplier B
+        e2 = ShoppingCartEntry.objects.create(part=self.cable, quantity=1)
+
+        response = self.post(
+            CONVERT_URL,
+            {"items": [e1.pk, e2.pk], "supplier": self.supplier.pk},
+            expected_code=400,
+        )
+        self.assertEqual(len(response.data["items"]), 1)
+
+        response = self.post(
+            CONVERT_URL,
+            {"items": [e1.pk, e2.pk], "supplier": self.other_supplier.pk},
+            expected_code=400,
+        )
+        self.assertEqual(len(response.data["items"]), 1)
+
+        # Must specify a supplier or order
+        response = self.post(CONVERT_URL, {"items": [e1.pk]}, expected_code=400)
+        self.assertIn("supplier", response.data)
+
+        # Nothing has been created or removed
+        self.assertEqual(PurchaseOrder.objects.count(), 0)
+        self.assertEqual(ShoppingCartEntry.objects.count(), 2)
+
+    def test_convert_permission(self):
+        """Conversion requires permission to create purchase orders."""
+        entry = ShoppingCartEntry.objects.create(part=self.part, quantity=1)
+
+        self.clearRoles()
+        self.assignRole("purchase_order.view")
+
+        self.post(
+            CONVERT_URL,
+            {"items": [entry.pk], "supplier": self.supplier.pk},
+            expected_code=403,
+        )
