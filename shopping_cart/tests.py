@@ -320,6 +320,30 @@ class ShoppingCartPrimaryActionTest(ShoppingCartTestMixin, InvenTreeAPITestCase)
         self.assertEqual(action["context"]["part"], self.part.pk)
         self.assertIn("PartAction.js:addToCart", action["source"])
 
+    def test_supplier_part_page(self):
+        """The button is displayed for supplier parts, with the supplier part pre-selected."""
+        actions = self.get_actions("supplierpart", self.sp_a.pk)
+        self.assertEqual(len(actions), 1)
+
+        context = actions[0]["context"]
+        self.assertEqual(context["part"], self.part.pk)
+        self.assertEqual(context["supplier_part"], self.sp_a.pk)
+
+        # The part page does not specify a supplier part
+        context = self.get_actions("part", self.part.pk)[0]["context"]
+        self.assertIsNone(context["supplier_part"])
+
+        # Inactive supplier part
+        self.sp_a.active = False
+        self.sp_a.save()
+        self.assertEqual(self.get_actions("supplierpart", self.sp_a.pk), [])
+
+        # Supplier part for a non-purchaseable part
+        sp = SupplierPart.objects.create(
+            part=self.assembly, supplier=self.supplier, SKU="ASM-1"
+        )
+        self.assertEqual(self.get_actions("supplierpart", sp.pk), [])
+
     def test_no_button(self):
         """The button is not displayed in other situations."""
         # Non-purchaseable part

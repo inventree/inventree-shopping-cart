@@ -11,6 +11,7 @@ type PartActionContext = {
   part: number;
   part_name: string;
   units?: string;
+  supplier_part?: number | null;
 };
 
 /**
@@ -31,7 +32,7 @@ async function loadTranslations(context: InvenTreePluginContext) {
 }
 
 /**
- * Callback function for the "Add to Cart" primary action on the part detail page.
+ * Callback function for the "Add to Cart" primary action on the part (or supplier part) detail page.
  *
  * The API form is launched via the plugin context, and rendered by the InvenTree user interface.
  */
@@ -76,6 +77,7 @@ export async function addToCart({
         disabled: true
       },
       supplier_part: {
+        value: serverContext.supplier_part ?? undefined,
         filters: {
           part: serverContext.part,
           active: true,

@@ -66,23 +66,45 @@ class ShoppingCart(AppMixin, UrlsMixin, UserInterfaceMixin, InvenTreePlugin):
             }
         ]
 
+    def get_cart_target(self, context: dict):
+        """Determine the part (and optional supplier part) for the current page.
+
+        Returns a (part, supplier_part) tuple, or (None, None) if the page is not supported.
+        """
+        from company.models import SupplierPart
+        from part.models import Part
+
+        target_model = context.get("target_model")
+
+        try:
+            target_id = int(context.get("target_id"))
+        except (TypeError, ValueError):
+            return None, None
+
+        if target_model == "part":
+            return Part.objects.filter(pk=target_id).first(), None
+
+        if target_model == "supplierpart":
+            supplier_part = (
+                SupplierPart.objects.filter(pk=target_id, active=True)
+                .select_related("part")
+                .first()
+            )
+
+            if supplier_part:
+                return supplier_part.part, supplier_part
+
+        return None, None
+
     # Custom primary action buttons
     def get_ui_primary_actions(self, request, context: dict, **kwargs):
-        """Display an "Add to Cart" button on the detail page for a purchaseable part."""
+        """Display an "Add to Cart" button on the detail page for a purchaseable part or supplier part."""
         if not check_user_role(request.user, "purchase_order", "view"):
             return []
 
-        from part.models import Part
+        part, supplier_part = self.get_cart_target(context)
 
-        if context.get("target_model") != "part":
-            return []
-
-        try:
-            part = Part.objects.get(pk=int(context.get("target_id")))
-        except (Part.DoesNotExist, TypeError, ValueError):
-            return []
-
-        if not part.purchaseable or not part.active:
+        if part is None or not part.purchaseable or not part.active:
             return []
 
         return [
@@ -96,6 +118,7 @@ class ShoppingCart(AppMixin, UrlsMixin, UserInterfaceMixin, InvenTreePlugin):
                     "part": part.pk,
                     "part_name": part.full_name,
                     "units": part.units,
+                    "supplier_part": supplier_part.pk if supplier_part else None,
                 },
             }
         ]

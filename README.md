@@ -44,7 +44,7 @@ Any user with *view* permission for purchase orders can add items to the cart. E
 | Project Code | Project code for the purchase (optional) |
 | User | The user who made the request (assigned automatically) |
 
-Items can also be added from the detail page of any active, purchaseable part, using the **Add to Cart** button in the page header.
+Items can also be added using the **Add to Cart** button in the page header, on the detail page of any active, purchaseable part, or of an active supplier part for a purchaseable part. When added from a supplier part page, the supplier part is pre-selected.
 
 Users can edit or remove their own requests. Users with *change* or *delete* permission for purchase orders can edit or remove any request.
 
