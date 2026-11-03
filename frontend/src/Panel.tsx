@@ -16,12 +16,17 @@ import {
   RowViewAction,
   type TableColumn,
   type TableFilter,
-  useTable
+  useTable,
+  YesNoButton
 } from '@inventreedb/ui';
 import { t } from '@lingui/core/macro';
-import { Alert, Stack, Text } from '@mantine/core';
+import { Alert, Center, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconInfoCircle, IconShoppingCartCopy } from '@tabler/icons-react';
+import {
+  IconAlertTriangle,
+  IconInfoCircle,
+  IconShoppingCartCopy
+} from '@tabler/icons-react';
 import { useCallback, useMemo, useState } from 'react';
 import { loadLocale } from './locales';
 
@@ -236,7 +241,41 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
       {
         accessor: 'target_date',
         title: t`Required Date`,
-        sortable: true
+        sortable: true,
+        render: (record: any) => {
+          if (!record.target_date) {
+            return '-';
+          }
+
+          if (!record.overdue) {
+            return record.target_date;
+          }
+
+          return (
+            <Group gap='xs' wrap='nowrap'>
+              <Text size='sm'>{record.target_date}</Text>
+              <Tooltip label={t`Overdue`}>
+                <IconAlertTriangle
+                  size={16}
+                  color='var(--mantine-color-orange-6)'
+                  aria-label='cart-entry-overdue'
+                />
+              </Tooltip>
+            </Group>
+          );
+        }
+      },
+      {
+        accessor: 'overdue',
+        title: t`Overdue`,
+        sortable: true,
+        defaultVisible: false,
+        filter: 'overdue',
+        render: (record: any) => (
+          <Center>
+            <YesNoButton value={record.overdue} />
+          </Center>
+        )
       },
       {
         accessor: 'project_code',
@@ -271,6 +310,11 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         name: 'mine',
         label: t`My Requests`,
         description: t`Show requests made by me`
+      },
+      {
+        name: 'overdue',
+        label: t`Overdue`,
+        description: t`Show requests which are past their required date`
       },
       {
         name: 'has_supplier_part',

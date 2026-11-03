@@ -54,6 +54,7 @@ class ShoppingCartEntrySerializer(InvenTreeModelSerializer):
             "supplier_part_detail",
             "quantity",
             "target_date",
+            "overdue",
             "reason",
             "project_code",
             "project_code_detail",
@@ -62,7 +63,7 @@ class ShoppingCartEntrySerializer(InvenTreeModelSerializer):
             "created",
         ]
 
-        read_only_fields = ["user", "created"]
+        read_only_fields = ["user", "created", "overdue"]
 
     part = serializers.PrimaryKeyRelatedField(
         queryset=Part.objects.filter(purchaseable=True, active=True),
@@ -77,6 +78,11 @@ class ShoppingCartEntrySerializer(InvenTreeModelSerializer):
     )
 
     quantity = InvenTreeDecimalField()
+
+    # Note: The "overdue" queryset annotation (see views.py) is used for ordering
+    overdue = serializers.BooleanField(
+        source="is_overdue", read_only=True, label=_("Overdue")
+    )
 
     part_detail = PartBriefSerializer(source="part", read_only=True)
     supplier_part_detail = SupplierPartBriefSerializer(
@@ -104,9 +110,9 @@ class ShoppingCartEntrySerializer(InvenTreeModelSerializer):
         )
 
         if part and supplier_part and supplier_part.part != part:
-            raise serializers.ValidationError(
-                {"supplier_part": _("Supplier part does not match the selected part")}
-            )
+            raise serializers.ValidationError({
+                "supplier_part": _("Supplier part does not match the selected part")
+            })
 
         return data
 
@@ -178,9 +184,9 @@ class ShoppingCartConvertSerializer(serializers.Serializer):
             raise serializers.ValidationError({"supplier": msg, "order": msg})
 
         if order is not None and supplier is not None and order.supplier != supplier:
-            raise serializers.ValidationError(
-                {"order": _("Purchase order supplier does not match selected supplier")}
-            )
+            raise serializers.ValidationError({
+                "order": _("Purchase order supplier does not match selected supplier")
+            })
 
         supplier = order.supplier if order else supplier
 
@@ -268,13 +274,9 @@ class ShoppingCartConvertSerializer(serializers.Serializer):
                 )
 
                 if len(locked) != len(pks):
-                    raise serializers.ValidationError(
-                        {
-                            "items": _(
-                                "Some items have already been removed from the cart"
-                            )
-                        }
-                    )
+                    raise serializers.ValidationError({
+                        "items": _("Some items have already been removed from the cart")
+                    })
 
                 if order is None:
                     order = PurchaseOrder.objects.create(

@@ -31,6 +31,19 @@ class ShoppingCartEntry(models.Model):
         return f"{self.quantity} x {self.part.full_name}"
 
     @staticmethod
+    def overdue_filter():
+        """Filter for cart entries which are past their required date."""
+        today = InvenTree.helpers.current_date()
+        return models.Q(target_date__isnull=False, target_date__lt=today)
+
+    @property
+    def is_overdue(self) -> bool:
+        """Return True if this entry is past its required date."""
+        return bool(
+            self.target_date and self.target_date < InvenTree.helpers.current_date()
+        )
+
+    @staticmethod
     def get_api_url():
         """Return the API URL for this model."""
         return "/plugin/shopping-cart/cart/"
@@ -52,18 +65,14 @@ class ShoppingCartEntry(models.Model):
 
         if self.supplier_part_id:
             if self.supplier_part.part_id != self.part_id:
-                raise ValidationError(
-                    {
-                        "supplier_part": _(
-                            "Supplier part does not match the selected part"
-                        )
-                    }
-                )
+                raise ValidationError({
+                    "supplier_part": _("Supplier part does not match the selected part")
+                })
 
             if not self.supplier_part.active:
-                raise ValidationError(
-                    {"supplier_part": _("Supplier part is not active")}
-                )
+                raise ValidationError({
+                    "supplier_part": _("Supplier part is not active")
+                })
 
         if self.quantity is not None and self.quantity <= 0:
             raise ValidationError({"quantity": _("Quantity must be greater than zero")})

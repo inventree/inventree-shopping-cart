@@ -1,6 +1,6 @@
 """API views for the ShoppingCart plugin."""
 
-from django.db.models import Q
+from django.db.models import BooleanField, Case, Q, Value, When
 from django_filters import rest_framework as rest_filters
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -60,12 +60,20 @@ class ShoppingCartEntryMixin:
         """Prefetch related fields for the cart entries."""
         queryset = super().get_queryset()
 
-        return queryset.select_related(
+        queryset = queryset.select_related(
             "part",
             "supplier_part",
             "supplier_part__supplier",
             "project_code",
             "user",
+        )
+
+        return queryset.annotate(
+            overdue=Case(
+                When(ShoppingCartEntry.overdue_filter(), then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField(),
+            )
         )
 
 
@@ -95,6 +103,15 @@ class ShoppingCartEntryFilter(rest_filters.FilterSet):
         lookup_expr="isnull",
         exclude=True,
     )
+
+    overdue = rest_filters.BooleanFilter(label="Overdue", method="filter_overdue")
+
+    def filter_overdue(self, queryset, name, value):
+        """Filter entries which are past their required date."""
+        if value:
+            return queryset.filter(ShoppingCartEntry.overdue_filter())
+
+        return queryset.exclude(ShoppingCartEntry.overdue_filter())
 
     supplier = rest_filters.ModelChoiceFilter(
         queryset=Company.objects.filter(is_supplier=True),
@@ -132,6 +149,7 @@ class ShoppingCartEntryList(ShoppingCartEntryMixin, ListCreateAPI):
         "supplier_part",
         "quantity",
         "target_date",
+        "overdue",
         "project_code",
         "user",
         "created",

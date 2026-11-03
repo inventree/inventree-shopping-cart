@@ -1,11 +1,13 @@
 """Unit tests for the ShoppingCart plugin."""
 
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth.models import User
 
 from common.models import InvenTreeSetting, ProjectCode
 from company.models import Company, SupplierPart
+from InvenTree.helpers import current_date
 from InvenTree.unit_test import InvenTreeAPITestCase
 from order.models import PurchaseOrder
 from order.status_codes import PurchaseOrderStatus
@@ -194,6 +196,43 @@ class ShoppingCartEntryTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
         response = self.get(CART_URL, {"search": "Supplier B"})
         self.assertEqual(len(response.data), 1)
 
+    def test_overdue(self):
+        """Test the overdue field, filter and ordering."""
+        today = current_date()
+
+        overdue = ShoppingCartEntry.objects.create(
+            part=self.part,
+            quantity=1,
+            user=self.user,
+            target_date=today - timedelta(days=1),
+        )
+
+        # Entries due today (or with no required date) are not overdue
+        for target_date in [today, today + timedelta(days=7), None]:
+            ShoppingCartEntry.objects.create(
+                part=self.part, quantity=1, user=self.user, target_date=target_date
+            )
+
+        response = self.get(CART_URL)
+        self.assertEqual(len(response.data), 4)
+
+        for item in response.data:
+            self.assertEqual(item["overdue"], item["pk"] == overdue.pk)
+
+        response = self.get(CART_URL, {"overdue": True})
+        self.assertEqual([item["pk"] for item in response.data], [overdue.pk])
+
+        response = self.get(CART_URL, {"overdue": False})
+        self.assertEqual(len(response.data), 3)
+        self.assertNotIn(overdue.pk, [item["pk"] for item in response.data])
+
+        response = self.get(CART_URL, {"ordering": "-overdue"})
+        self.assertEqual(response.data[0]["pk"], overdue.pk)
+
+        # The overdue status is also returned for a single entry
+        response = self.get(f"{CART_URL}{overdue.pk}/")
+        self.assertTrue(response.data["overdue"])
+
 
 class ShoppingCartConvertTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
     """Tests for converting cart entries into a purchase order."""
@@ -341,7 +380,8 @@ class ShoppingCartPrimaryActionTest(ShoppingCartTestMixin, InvenTreeAPITestCase)
         action = actions[0]
         self.assertEqual(action["key"], "add-to-cart")
         self.assertEqual(action["context"]["part"], self.part.pk)
-        self.assertIn("PartAction.js:addToCart", action["source"])
+        # Note: The source file may be resolved to the hashed build output
+        self.assertRegex(action["source"], r"/PartAction(-[\w-]+)?\.js:addToCart$")
 
     def test_supplier_part_page(self):
         """The button is displayed for supplier parts, with the supplier part pre-selected."""

@@ -94,6 +94,12 @@ msgstr ""
 
 #: src/Panel.tsx
 #: src/Panel.tsx
+#: src/Panel.tsx
+msgid "Overdue"
+msgstr ""
+
+#: src/Panel.tsx
+#: src/Panel.tsx
 msgid "Project Code"
 msgstr ""
 
@@ -115,6 +121,10 @@ msgstr ""
 
 #: src/Panel.tsx
 msgid "Show requests made by me"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Show requests which are past their required date"
 msgstr ""
 
 #: src/Panel.tsx
