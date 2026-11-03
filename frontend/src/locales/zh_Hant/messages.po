@@ -15,7 +15,6 @@ msgstr ""
 
 #: src/Panel.tsx
 #: src/PartAction.tsx
-#: src/PartAction.tsx
 msgid "Add to Cart"
 msgstr ""
 
@@ -77,28 +76,23 @@ msgid "Description"
 msgstr ""
 
 #: src/Panel.tsx
-#: src/PartAction.tsx
 msgid "Supplier Part"
 msgstr ""
 
 #: src/Panel.tsx
-#: src/PartAction.tsx
 msgid "Quantity"
 msgstr ""
 
 #: src/Panel.tsx
-#: src/PartAction.tsx
 msgid "Required Date"
 msgstr ""
 
 #: src/Panel.tsx
 #: src/Panel.tsx
-#: src/PartAction.tsx
 msgid "Project Code"
 msgstr ""
 
 #: src/Panel.tsx
-#: src/PartAction.tsx
 msgid "Reason"
 msgstr ""
 
@@ -158,40 +152,12 @@ msgstr ""
 msgid "Add items to your shopping cart. These can be converted into purchase orders when ready."
 msgstr ""
 
-#: src/PartAction.tsx
-msgid "Added to Cart"
-msgstr ""
-
-#. placeholder {0}: part.part_name
-#: src/PartAction.tsx
-msgid "{0} added to the shopping cart"
-msgstr ""
-
-#: src/PartAction.tsx
-msgid "Failed to add item to cart"
-msgstr ""
-
-#. placeholder {0}: part.units
+#. placeholder {0}: serverContext.units
 #: src/PartAction.tsx
 msgid "Required quantity [{0}]"
 msgstr ""
 
+#. placeholder {0}: serverContext.part_name
 #: src/PartAction.tsx
-msgid "Required quantity"
-msgstr ""
-
-#: src/PartAction.tsx
-msgid "Preferred supplier part (optional)"
-msgstr ""
-
-#: src/PartAction.tsx
-msgid "Date by which the items are required (optional)"
-msgstr ""
-
-#: src/PartAction.tsx
-msgid "Reason for this purchase request (optional)"
-msgstr ""
-
-#: src/PartAction.tsx
-msgid "Cancel"
+msgid "{0} added to the shopping cart"
 msgstr ""

@@ -1,23 +1,5 @@
-import {
-  ApiEndpoints,
-  apiUrl,
-  type InvenTreePluginContext,
-  LocalizedComponent
-} from '@inventreedb/ui';
+import type { InvenTreePluginContext } from '@inventreedb/ui';
 import { t } from '@lingui/core/macro';
-import {
-  Button,
-  Group,
-  NumberInput,
-  Select,
-  Stack,
-  Text,
-  Textarea,
-  TextInput
-} from '@mantine/core';
-import { modals } from '@mantine/modals';
-import { notifications } from '@mantine/notifications';
-import { type ReactNode, useEffect, useState } from 'react';
 import { loadLocale } from './locales';
 
 const CART_URL: string = '/plugin/shopping-cart/cart/';
@@ -31,199 +13,29 @@ type PartActionContext = {
   units?: string;
 };
 
-type SelectOption = { value: string; label: string };
-
 /**
- * Simple form for adding a part to the shopping cart.
- *
- * Note: The "primary action" callback is not a React component,
- * so the hook-based form functions (context.forms.create) are not available.
- * Instead, a basic form is rendered within a modal which is opened manually.
+ * Load the plugin translations into the shared i18n instance.
+ * This is normally handled by <LocalizedComponent>, but the primary action callback is not a React component.
+ * If translations are not available, the (English) source strings are used.
  */
-function AddToCartForm({
-  context,
-  part,
-  onClose
-}: {
-  context: InvenTreePluginContext;
-  part: PartActionContext;
-  onClose: () => void;
-}) {
-  const projectCodesEnabled: boolean = !!context.globalSettings?.isSet?.(
-    'PROJECT_CODES_ENABLED'
-  );
+async function loadTranslations(context: InvenTreePluginContext) {
+  try {
+    const catalog = await loadLocale(context.locale);
 
-  const [quantity, setQuantity] = useState<number | string>(1);
-  const [supplierPart, setSupplierPart] = useState<string | null>(null);
-  const [targetDate, setTargetDate] = useState<string>('');
-  const [projectCode, setProjectCode] = useState<string | null>(null);
-  const [reason, setReason] = useState<string>('');
-
-  const [supplierParts, setSupplierParts] = useState<SelectOption[]>([]);
-  const [projectCodes, setProjectCodes] = useState<SelectOption[]>([]);
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState<boolean>(false);
-
-  // Load the available supplier parts for this part
-  useEffect(() => {
-    context.api
-      .get(apiUrl(ApiEndpoints.supplier_part_list), {
-        params: { part: part.part, active: true, supplier_detail: true }
-      })
-      .then((response: any) => {
-        const results = response.data?.results ?? response.data ?? [];
-
-        setSupplierParts(
-          results.map((sp: any) => ({
-            value: `${sp.pk}`,
-            label: `${sp.supplier_detail?.name ?? '-'} | ${sp.SKU}`
-          }))
-        );
-      })
-      .catch(() => setSupplierParts([]));
-  }, [part.part]);
-
-  // Load the available project codes
-  useEffect(() => {
-    if (!projectCodesEnabled) {
-      return;
+    if (catalog?.messages) {
+      context.i18n.load(context.locale, catalog.messages);
     }
-
-    context.api
-      .get(apiUrl(ApiEndpoints.project_code_list))
-      .then((response: any) => {
-        const results = response.data?.results ?? response.data ?? [];
-
-        setProjectCodes(
-          results.map((pc: any) => ({
-            value: `${pc.pk}`,
-            label: pc.description ? `${pc.code} - ${pc.description}` : pc.code
-          }))
-        );
-      })
-      .catch(() => setProjectCodes([]));
-  }, [projectCodesEnabled]);
-
-  const submit = () => {
-    setSubmitting(true);
-    setErrors({});
-
-    context.api
-      .post(CART_URL, {
-        part: part.part,
-        quantity: quantity,
-        supplier_part: supplierPart || null,
-        target_date: targetDate || null,
-        project_code: projectCode || null,
-        reason: reason
-      })
-      .then(() => {
-        notifications.show({
-          title: t`Added to Cart`,
-          message: t`${part.part_name} added to the shopping cart`,
-          color: 'green'
-        });
-        onClose();
-      })
-      .catch((error: any) => {
-        const data = error?.response?.data ?? {};
-        const fieldErrors: Record<string, string> = {};
-
-        Object.keys(data).forEach((key: string) => {
-          const value = data[key];
-          fieldErrors[key] = Array.isArray(value)
-            ? value.join(', ')
-            : `${value}`;
-        });
-
-        if (Object.keys(fieldErrors).length == 0) {
-          fieldErrors.non_field_errors = t`Failed to add item to cart`;
-        }
-
-        setErrors(fieldErrors);
-      })
-      .finally(() => setSubmitting(false));
-  };
-
-  return (
-    <Stack gap='sm'>
-      <Text fw={500}>{part.part_name}</Text>
-      {(errors.non_field_errors || errors.part) && (
-        <Text c='red' size='sm'>
-          {errors.non_field_errors ?? errors.part}
-        </Text>
-      )}
-      <NumberInput
-        label={t`Quantity`}
-        description={
-          part.units
-            ? t`Required quantity [${part.units}]`
-            : t`Required quantity`
-        }
-        required
-        min={0}
-        value={quantity}
-        onChange={setQuantity}
-        error={errors.quantity}
-      />
-      <Select
-        label={t`Supplier Part`}
-        description={t`Preferred supplier part (optional)`}
-        data={supplierParts}
-        value={supplierPart}
-        onChange={setSupplierPart}
-        clearable
-        searchable
-        error={errors.supplier_part}
-      />
-      <TextInput
-        type='date'
-        label={t`Required Date`}
-        description={t`Date by which the items are required (optional)`}
-        value={targetDate}
-        onChange={(event) => setTargetDate(event.currentTarget.value)}
-        error={errors.target_date}
-      />
-      {projectCodesEnabled && (
-        <Select
-          label={t`Project Code`}
-          data={projectCodes}
-          value={projectCode}
-          onChange={setProjectCode}
-          clearable
-          searchable
-          error={errors.project_code}
-        />
-      )}
-      <Textarea
-        label={t`Reason`}
-        description={t`Reason for this purchase request (optional)`}
-        maxLength={500}
-        value={reason}
-        onChange={(event) => setReason(event.currentTarget.value)}
-        error={errors.reason}
-      />
-      <Group justify='right'>
-        <Button variant='default' onClick={onClose}>
-          {t`Cancel`}
-        </Button>
-        <Button color='green' loading={submitting} onClick={submit}>
-          {t`Add to Cart`}
-        </Button>
-      </Group>
-    </Stack>
-  );
-}
-
-function ModalTitle() {
-  return <Text fw={700}>{t`Add to Cart`}</Text>;
+  } catch {
+    // Fall back to the source strings
+  }
 }
 
 /**
  * Callback function for the "Add to Cart" primary action on the part detail page.
+ *
+ * The API form is launched via the plugin context, and rendered by the InvenTree user interface.
  */
-export function addToCart({
+export async function addToCart({
   inventreeContext,
   serverContext
 }: {
@@ -236,25 +48,51 @@ export function addToCart({
     return;
   }
 
-  const localize = (children: ReactNode) => (
-    <LocalizedComponent
-      i18n={context.i18n}
-      locale={context.locale}
-      loadLocale={loadLocale}
-    >
-      {children}
-    </LocalizedComponent>
+  // Requires InvenTree 1.7.0 or newer
+  // TODO: Remove cast once the @inventreedb/ui type definitions include openCreate
+  const forms = context.forms as InvenTreePluginContext['forms'] & {
+    openCreate?: (props: any) => string;
+  };
+
+  if (!forms.openCreate) {
+    console.error(
+      'Shopping Cart: This version of InvenTree does not support forms.openCreate'
+    );
+    return;
+  }
+
+  await loadTranslations(context);
+
+  const projectCodesEnabled: boolean = !!context.globalSettings?.isSet?.(
+    'PROJECT_CODES_ENABLED'
   );
 
-  const modalId: string = modals.open({
-    title: localize(<ModalTitle />),
-    size: 'lg',
-    children: localize(
-      <AddToCartForm
-        context={context}
-        part={serverContext}
-        onClose={() => modals.close(modalId)}
-      />
-    )
+  forms.openCreate({
+    url: CART_URL,
+    title: t`Add to Cart`,
+    fields: {
+      part: {
+        value: serverContext.part,
+        disabled: true
+      },
+      supplier_part: {
+        filters: {
+          part: serverContext.part,
+          active: true,
+          part_detail: true,
+          supplier_detail: true
+        }
+      },
+      // Note: Only override the server-provided description if units are specified
+      quantity: serverContext.units
+        ? { description: t`Required quantity [${serverContext.units}]` }
+        : {},
+      target_date: {},
+      project_code: {
+        hidden: !projectCodesEnabled
+      },
+      reason: {}
+    },
+    successMessage: t`${serverContext.part_name} added to the shopping cart`
   });
 }
