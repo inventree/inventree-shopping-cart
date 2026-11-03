@@ -19,7 +19,7 @@ import {
   useTable
 } from '@inventreedb/ui';
 import { t } from '@lingui/core/macro';
-import { Alert, Group, Stack, Text } from '@mantine/core';
+import { Alert, Stack, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconInfoCircle, IconShoppingCartCopy } from '@tabler/icons-react';
 import { useCallback, useMemo, useState } from 'react';
@@ -209,24 +209,17 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         title: t`Description`
       },
       {
+        accessor: 'supplier',
+        title: t`Supplier`,
+        sortable: true,
+        render: (record: any) =>
+          record.supplier_part_detail?.supplier_detail?.name ?? '-'
+      },
+      {
         accessor: 'supplier_part',
         title: t`Supplier Part`,
-        render: (record: any) => {
-          const sp = record.supplier_part_detail;
-
-          if (!sp) {
-            return '-';
-          }
-
-          return (
-            <Group gap='xs' justify='space-between' wrap='nowrap'>
-              <Text size='sm'>{sp.SKU}</Text>
-              <Text size='xs' c='dimmed'>
-                {sp.supplier_detail?.name}
-              </Text>
-            </Group>
-          );
-        }
+        sortable: true,
+        render: (record: any) => record.supplier_part_detail?.SKU ?? '-'
       },
       {
         accessor: 'quantity',

@@ -128,6 +128,8 @@ class ShoppingCartEntryList(ShoppingCartEntryMixin, ListCreateAPI):
     ordering_fields = [
         "pk",
         "part",
+        "supplier",
+        "supplier_part",
         "quantity",
         "target_date",
         "project_code",
@@ -137,6 +139,8 @@ class ShoppingCartEntryList(ShoppingCartEntryMixin, ListCreateAPI):
 
     ordering_field_aliases = {
         "part": "part__name",
+        "supplier": "supplier_part__supplier__name",
+        "supplier_part": "supplier_part__SKU",
         "project_code": "project_code__code",
         "user": "user__username",
     }
@@ -146,6 +150,7 @@ class ShoppingCartEntryList(ShoppingCartEntryMixin, ListCreateAPI):
         "part__IPN",
         "part__description",
         "supplier_part__SKU",
+        "supplier_part__supplier__name",
         "reason",
         "project_code__code",
     ]
@@ -187,18 +192,14 @@ def construct_urls():
     return [
         path(
             "cart/",
-            include(
-                [
-                    path(
-                        "convert/", ShoppingCartConvert.as_view(), name="cart-convert"
-                    ),
-                    path(
-                        "<int:pk>/",
-                        ShoppingCartEntryDetail.as_view(),
-                        name="cart-entry-detail",
-                    ),
-                    path("", ShoppingCartEntryList.as_view(), name="cart-entry-list"),
-                ]
-            ),
+            include([
+                path("convert/", ShoppingCartConvert.as_view(), name="cart-convert"),
+                path(
+                    "<int:pk>/",
+                    ShoppingCartEntryDetail.as_view(),
+                    name="cart-entry-detail",
+                ),
+                path("", ShoppingCartEntryList.as_view(), name="cart-entry-list"),
+            ]),
         ),
     ]

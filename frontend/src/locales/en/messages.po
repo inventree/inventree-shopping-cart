@@ -76,6 +76,11 @@ msgid "Description"
 msgstr "Description"
 
 #: src/Panel.tsx
+#: src/Panel.tsx
+msgid "Supplier"
+msgstr "Supplier"
+
+#: src/Panel.tsx
 msgid "Supplier Part"
 msgstr "Supplier Part"
 
@@ -119,10 +124,6 @@ msgstr "Has Supplier Part"
 #: src/Panel.tsx
 msgid "Show requests which specify a supplier part"
 msgstr "Show requests which specify a supplier part"
-
-#: src/Panel.tsx
-msgid "Supplier"
-msgstr "Supplier"
 
 #: src/Panel.tsx
 msgid "Show requests which can be ordered from a supplier"

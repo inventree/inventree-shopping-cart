@@ -171,6 +171,29 @@ class ShoppingCartEntryTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
         response = self.get(CART_URL, {"supplier": self.other_supplier.pk})
         self.assertEqual(len(response.data), 2)
 
+        # Order by supplier name / SKU
+        # Note: Null ordering is database dependent, so only entries with a supplier part are compared
+        ShoppingCartEntry.objects.create(
+            part=self.part, supplier_part=self.sp_a, quantity=1, user=self.user
+        )
+
+        for ordering in ["supplier", "supplier_part"]:
+            for prefix, expected in [
+                ("", [self.sp_a, self.sp_b]),
+                ("-", [self.sp_b, self.sp_a]),
+            ]:
+                response = self.get(CART_URL, {"ordering": f"{prefix}{ordering}"})
+                result = [
+                    item["supplier_part"]
+                    for item in response.data
+                    if item["supplier_part"]
+                ]
+                self.assertEqual(result, [sp.pk for sp in expected])
+
+        # Search by supplier name
+        response = self.get(CART_URL, {"search": "Supplier B"})
+        self.assertEqual(len(response.data), 1)
+
 
 class ShoppingCartConvertTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
     """Tests for converting cart entries into a purchase order."""
