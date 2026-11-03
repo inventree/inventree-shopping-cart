@@ -312,6 +312,16 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         description: t`Show requests made by me`
       },
       {
+        name: 'user',
+        label: t`Requested By`,
+        description: t`Show requests made by a specific user`,
+        type: 'api',
+        apiUrl: apiUrl(ApiEndpoints.user_list),
+        apiFilter: { is_active: true },
+        model: ModelType.user,
+        modelRenderer: (instance: any) => instance.username
+      },
+      {
         name: 'overdue',
         label: t`Overdue`,
         description: t`Show requests which are past their required date`

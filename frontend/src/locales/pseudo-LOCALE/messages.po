@@ -108,6 +108,7 @@ msgid "Reason"
 msgstr ""
 
 #: src/Panel.tsx
+#: src/Panel.tsx
 msgid "Requested By"
 msgstr ""
 
@@ -121,6 +122,10 @@ msgstr ""
 
 #: src/Panel.tsx
 msgid "Show requests made by me"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Show requests made by a specific user"
 msgstr ""
 
 #: src/Panel.tsx

@@ -108,6 +108,7 @@ msgid "Reason"
 msgstr "Reason"
 
 #: src/Panel.tsx
+#: src/Panel.tsx
 msgid "Requested By"
 msgstr "Requested By"
 
@@ -122,6 +123,10 @@ msgstr "My Requests"
 #: src/Panel.tsx
 msgid "Show requests made by me"
 msgstr "Show requests made by me"
+
+#: src/Panel.tsx
+msgid "Show requests made by a specific user"
+msgstr "Show requests made by a specific user"
 
 #: src/Panel.tsx
 msgid "Show requests which are past their required date"

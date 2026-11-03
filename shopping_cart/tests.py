@@ -166,6 +166,13 @@ class ShoppingCartEntryTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
         self.assertEqual(len(self.get(CART_URL, {"mine": False}).data), 2)
         self.assertEqual(len(self.get(CART_URL, {"has_supplier_part": True}).data), 1)
 
+        # Filter by requesting user
+        response = self.get(CART_URL, {"user": self.other_user.pk})
+        self.assertEqual(len(response.data), 2)
+        self.assertTrue(
+            all(item["user"] == self.other_user.pk for item in response.data)
+        )
+
         # Supplier A can supply the first two entries (but not the third, which specifies supplier B)
         response = self.get(CART_URL, {"supplier": self.supplier.pk})
         self.assertEqual(len(response.data), 2)
