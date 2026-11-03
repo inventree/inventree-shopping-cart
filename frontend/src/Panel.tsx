@@ -34,6 +34,27 @@ const CART_URL: string = '/plugin/shopping-cart/cart/';
 const CONVERT_URL: string = '/plugin/shopping-cart/cart/convert/';
 
 /**
+ * Format a datetime string as a (local) YYYY-MM-DD date,
+ * to match the format of the date-only fields
+ */
+function formatDate(value?: string | null): string {
+  if (!value) {
+    return '-';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/**
  * Render the shopping cart panel on the "purchasing" index page.
  * - Any user can add requests to the cart, and edit their own requests
  * - Purchasing users can convert selected requests into a purchase order
@@ -298,8 +319,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         accessor: 'created',
         title: t`Created`,
         sortable: true,
-        render: (record: any) =>
-          record.created ? new Date(record.created).toLocaleDateString() : '-'
+        render: (record: any) => formatDate(record.created)
       }
     ];
   }, [projectCodesEnabled]);

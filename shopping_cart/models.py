@@ -50,9 +50,6 @@ class ShoppingCartEntry(models.Model):
 
     def save(self, *args, **kwargs):
         """Validate the entry before saving."""
-        if not self.created:
-            self.created = InvenTree.helpers.current_time()
-
         self.clean()
         super().save(*args, **kwargs)
 
@@ -140,8 +137,8 @@ class ShoppingCartEntry(models.Model):
     )
 
     created = models.DateTimeField(
+        auto_now_add=True,
         null=True,
-        blank=True,
         verbose_name=_("Created"),
         help_text=_("Date and time this request was created"),
     )
