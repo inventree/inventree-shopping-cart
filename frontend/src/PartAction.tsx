@@ -49,26 +49,13 @@ export async function addToCart({
     return;
   }
 
-  // Requires InvenTree 1.7.0 or newer
-  // TODO: Remove cast once the @inventreedb/ui type definitions include openCreate
-  const forms = context.forms as InvenTreePluginContext['forms'] & {
-    openCreate?: (props: any) => string;
-  };
-
-  if (!forms.openCreate) {
-    console.error(
-      'Shopping Cart: This version of InvenTree does not support forms.openCreate'
-    );
-    return;
-  }
-
   await loadTranslations(context);
 
   const projectCodesEnabled: boolean = !!context.globalSettings?.isSet?.(
     'PROJECT_CODES_ENABLED'
   );
 
-  forms.openCreate({
+  context.forms.openCreate({
     url: CART_URL,
     title: t`Add to Cart`,
     fields: {
