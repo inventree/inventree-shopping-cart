@@ -281,3 +281,60 @@ class ShoppingCartConvertTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
             {"items": [entry.pk], "supplier": self.supplier.pk},
             expected_code=403,
         )
+
+
+class ShoppingCartPrimaryActionTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
+    """Tests for the "Add to Cart" button on the part detail page."""
+
+    roles = ["purchase_order.view"]
+
+    URL = "/api/plugins/ui/features/primary_action/"
+
+    def setUp(self):
+        """Enable the plugin user interface."""
+        super().setUp()
+        InvenTreeSetting.set_setting("ENABLE_PLUGINS_INTERFACE", True, None)
+
+    def get_actions(self, target_model=None, target_id=None) -> list:
+        """Return the cart actions provided for a given page context."""
+        params = {"location": "/web/"}
+
+        if target_model is not None:
+            params["target_model"] = target_model
+
+        if target_id is not None:
+            params["target_id"] = target_id
+
+        response = self.get(self.URL, params)
+        return [
+            item for item in response.data if item["plugin_name"] == "shopping-cart"
+        ]
+
+    def test_part_page(self):
+        """The button is displayed for purchaseable parts."""
+        actions = self.get_actions("part", self.part.pk)
+        self.assertEqual(len(actions), 1)
+
+        action = actions[0]
+        self.assertEqual(action["key"], "add-to-cart")
+        self.assertEqual(action["context"]["part"], self.part.pk)
+        self.assertIn("PartAction.js:addToCart", action["source"])
+
+    def test_no_button(self):
+        """The button is not displayed in other situations."""
+        # Non-purchaseable part
+        self.assertEqual(self.get_actions("part", self.assembly.pk), [])
+
+        # Non-existent or invalid part
+        self.assertEqual(self.get_actions("part", 99999), [])
+        self.assertEqual(self.get_actions("part", "abc"), [])
+        self.assertEqual(self.get_actions("part"), [])
+
+        # Other pages
+        self.assertEqual(self.get_actions("stockitem", self.part.pk), [])
+        self.assertEqual(self.get_actions("purchasing"), [])
+        self.assertEqual(self.get_actions(), [])
+
+        # User without purchase order access
+        self.clearRoles()
+        self.assertEqual(self.get_actions("part", self.part.pk), [])

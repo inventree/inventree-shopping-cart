@@ -14,6 +14,8 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/Panel.tsx
+#: src/PartAction.tsx
+#: src/PartAction.tsx
 msgid "Add to Cart"
 msgstr "Add to Cart"
 
@@ -75,23 +77,28 @@ msgid "Description"
 msgstr "Description"
 
 #: src/Panel.tsx
+#: src/PartAction.tsx
 msgid "Supplier Part"
 msgstr "Supplier Part"
 
 #: src/Panel.tsx
+#: src/PartAction.tsx
 msgid "Quantity"
 msgstr "Quantity"
 
 #: src/Panel.tsx
+#: src/PartAction.tsx
 msgid "Required Date"
 msgstr "Required Date"
 
 #: src/Panel.tsx
 #: src/Panel.tsx
+#: src/PartAction.tsx
 msgid "Project Code"
 msgstr "Project Code"
 
 #: src/Panel.tsx
+#: src/PartAction.tsx
 msgid "Reason"
 msgstr "Reason"
 
@@ -142,3 +149,49 @@ msgstr "Create purchase order from selected items"
 #: src/Panel.tsx
 msgid "Add item to cart"
 msgstr "Add item to cart"
+
+#: src/Panel.tsx
+msgid "Shopping Cart"
+msgstr "Shopping Cart"
+
+#: src/Panel.tsx
+msgid "Add items to your shopping cart. These can be converted into purchase orders when ready."
+msgstr "Add items to your shopping cart. These can be converted into purchase orders when ready."
+
+#: src/PartAction.tsx
+msgid "Added to Cart"
+msgstr "Added to Cart"
+
+#. placeholder {0}: part.part_name
+#: src/PartAction.tsx
+msgid "{0} added to the shopping cart"
+msgstr "{0} added to the shopping cart"
+
+#: src/PartAction.tsx
+msgid "Failed to add item to cart"
+msgstr "Failed to add item to cart"
+
+#. placeholder {0}: part.units
+#: src/PartAction.tsx
+msgid "Required quantity [{0}]"
+msgstr "Required quantity [{0}]"
+
+#: src/PartAction.tsx
+msgid "Required quantity"
+msgstr "Required quantity"
+
+#: src/PartAction.tsx
+msgid "Preferred supplier part (optional)"
+msgstr "Preferred supplier part (optional)"
+
+#: src/PartAction.tsx
+msgid "Date by which the items are required (optional)"
+msgstr "Date by which the items are required (optional)"
+
+#: src/PartAction.tsx
+msgid "Reason for this purchase request (optional)"
+msgstr "Reason for this purchase request (optional)"
+
+#: src/PartAction.tsx
+msgid "Cancel"
+msgstr "Cancel"

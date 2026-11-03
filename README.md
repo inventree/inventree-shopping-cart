@@ -20,7 +20,7 @@ pip install inventree-shopping-cart
 
 ## Configuration
 
-This plugin requires InvenTree 1.4.0 or newer, and the following global settings must be enabled:
+This plugin requires InvenTree 1.7.0 or newer, and the following global settings must be enabled:
 
 - **Enable app integration**: The plugin provides a database table, so migrations must be run after activation.
 - **Enable URL integration**: The plugin provides custom API endpoints.
@@ -43,6 +43,8 @@ Any user with *view* permission for purchase orders can add items to the cart. E
 | Reason | Reason for the purchase (optional) |
 | Project Code | Project code for the purchase (optional) |
 | User | The user who made the request (assigned automatically) |
+
+Items can also be added from the detail page of any active, purchaseable part, using the **Add to Cart** button in the page header.
 
 Users can edit or remove their own requests. Users with *change* or *delete* permission for purchase orders can edit or remove any request.
 

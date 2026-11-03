@@ -49,6 +49,7 @@ export default defineConfig({
       preserveEntrySignatures: "exports-only",
       input: [
         './src/Panel.tsx',
+        './src/PartAction.tsx',
         
         
       ],
