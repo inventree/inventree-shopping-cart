@@ -30,6 +30,8 @@ This plugin requires InvenTree 1.7.0 or newer, and the following global settings
 
 The *Shopping Cart* panel is displayed on the **Purchasing** page.
 
+![Shopping cart panel](docs/cart-panel.png)
+
 ### Requesting Items
 
 Any user with *view* permission for purchase orders can add items to the cart. Each request records:
@@ -46,16 +48,29 @@ Any user with *view* permission for purchase orders can add items to the cart. E
 
 Items can also be added using the **Add to Cart** button in the page header, on the detail page of any active, purchaseable part, or of an active supplier part for a purchaseable part. When added from a supplier part page, the supplier part is pre-selected.
 
-The **Add to Cart** dashboard item can be added to the InvenTree dashboard, providing quick access to the same form from the home page.
+![Add to Cart button on the part detail page](docs/part-add-to-cart-button.png)
+
+The required quantity is suggested based on the existing requirements for the part (see [API](#api)). The suggested quantity is displayed as a placeholder, and can be auto-filled by clicking on the button next to the quantity field.
+
+| Added from a part page | Added from a supplier part page |
+| --- | --- |
+| ![Add to Cart form](docs/add-to-cart-form.png) | ![Add to Cart form, with supplier part pre-selected](docs/supplier-part-add-to-cart-form.png) |
+
+The **Shopping Cart** dashboard item can be added to the InvenTree dashboard. It displays the number of items in the cart, and links to the shopping cart panel.
+
+![Shopping cart dashboard item](docs/dashboard-widget.png)
 
 Users can edit or remove their own requests. Users with *change* or *delete* permission for purchase orders can edit or remove any request.
 
 ### Creating Purchase Orders
 
-Users with *add* permission for purchase orders can select multiple requests in the cart, and create a purchase order from them. Either:
+Users with *add* permission for purchase orders can select multiple requests in the cart, and create a purchase order from them. Only requests which specify a supplier part can be selected, and all selected requests must be from the same supplier (the supplier is determined from the selected requests). Then either:
 
-- Select a **supplier**, to create a new purchase order, or
-- Select an existing **pending** purchase order, to add the items to it
+- Leave the purchase order empty, to create a new purchase order for the supplier, or
+- Select an existing **pending** purchase order for the supplier, to add the items to it, or
+- Create a new purchase order directly from the form (using the **+** button next to the purchase order field), to customize the new order
+
+![Create purchase order dialog](docs/create-purchase-order.png)
 
 For each selected request, a supplier part is determined as follows:
 
