@@ -238,8 +238,18 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         accessor: 'supplier',
         title: t`Supplier`,
         sortable: true,
-        render: (record: any) =>
-          record.supplier_part_detail?.supplier_detail?.name ?? '-'
+        render: (record: any) => {
+          const supplier = record.supplier_part_detail?.supplier_detail;
+
+          if (!supplier) {
+            return '-';
+          }
+
+          return context.thumbnail({
+            src: supplier.thumbnail ?? supplier.image,
+            text: supplier.name
+          });
+        }
       },
       {
         accessor: 'supplier_part',
