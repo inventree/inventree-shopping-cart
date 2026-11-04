@@ -14,13 +14,24 @@ import {
   RowDeleteAction,
   RowEditAction,
   RowViewAction,
+  StylishText,
   type TableColumn,
   type TableFilter,
   useTable,
   YesNoButton
 } from '@inventreedb/ui';
 import { t } from '@lingui/core/macro';
-import { Alert, Center, Group, Stack, Text, Tooltip } from '@mantine/core';
+import {
+  Alert,
+  Button,
+  Center,
+  Divider,
+  Group,
+  Modal,
+  Stack,
+  Text,
+  Tooltip
+} from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import {
   IconAlertTriangle,
@@ -136,16 +147,42 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
     ignorePermissionCheck: true
   });
 
-  // If all selected entries share a supplier, pre-select it
-  const defaultSupplier = useMemo(() => {
-    const suppliers = new Set(
+  // Suppliers specified by the selected entries (entries without a supplier part are ignored)
+  const selectedSuppliers: Map<number, string> = useMemo(() => {
+    const suppliers = new Map<number, string>();
+
+    for (const record of tableState.selectedRecords) {
+      const supplier = record.supplier_part_detail?.supplier_detail;
+
+      if (supplier?.pk) {
+        suppliers.set(supplier.pk, supplier.name);
+      }
+    }
+
+    return suppliers;
+  }, [tableState.selectedRecords]);
+
+  // If the selected entries specify a supplier, it is fixed for the conversion
+  const defaultSupplier: number | null = useMemo(() => {
+    if (selectedSuppliers.size == 1) {
+      return [...selectedSuppliers.keys()][0];
+    }
+
+    return null;
+  }, [selectedSuppliers]);
+
+  const [supplierError, setSupplierError] = useState<boolean>(false);
+
+  // If all selected entries share a project code, pre-select it for a new order
+  const defaultProjectCode = useMemo(() => {
+    const codes = new Set(
       tableState.selectedRecords.map(
-        (record: any) => record.supplier_part_detail?.supplier ?? null
+        (record: any) => record.project_code ?? null
       )
     );
 
-    if (suppliers.size == 1) {
-      return [...suppliers][0];
+    if (codes.size == 1) {
+      return [...codes][0];
     }
 
     return null;
@@ -159,12 +196,8 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
     submitText: t`Create`,
     preFormContent: (
       <Alert color='blue' icon={<IconInfoCircle />}>
-        <Text>
-          {t`Select a supplier to create a new purchase order, or select an existing pending purchase order to add these items to.`}
-        </Text>
-        <Text>
-          {t`Converted items will be removed from the shopping cart.`}
-        </Text>
+        <Text>{t`Select a pending purchase order to add these items to.`}</Text>
+        <Text>{t`Selected items will be removed from the shopping cart.`}</Text>
       </Alert>
     ),
     fields: {
@@ -174,6 +207,8 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
       },
       supplier: {
         value: defaultSupplier,
+        // Supplier is determined by the selected entries (if specified)
+        disabled: !!defaultSupplier,
         filters: {
           is_supplier: true,
           active: true
@@ -188,14 +223,44 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
           // Only "pending" purchase orders can be selected
           status: 10,
           supplier_detail: true
+        },
+        // Allow a new purchase order to be created directly from this form
+        // Note: The supplier is pre-filled from the "supplier" filter above
+        addCreateFields: {
+          reference: {},
+          description: {},
+          supplier: {
+            disabled: !!defaultSupplier,
+            filters: {
+              is_supplier: true,
+              active: true
+            }
+          },
+          supplier_reference: {},
+          project_code: {
+            hidden: !projectCodesEnabled,
+            value: defaultProjectCode ?? undefined
+          },
+          target_date: {},
+          responsible: {
+            filters: {
+              is_active: true
+            }
+          }
         }
       }
     },
     // Always submit the current table selection
-    processFormData: (data: any) => ({
-      ...data,
-      items: tableState.selectedIds
-    }),
+    // If an order is selected, its supplier takes precedence over the selected supplier
+    processFormData: (data: any) => {
+      const { supplier, ...rest } = data;
+
+      return {
+        ...rest,
+        ...(data.order ? {} : { supplier }),
+        items: tableState.selectedIds
+      };
+    },
     successMessage: null,
     onFormSuccess: (response: any) => {
       tableState.clearSelectedRecords();
@@ -424,6 +489,12 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         hidden={!canConvert}
         disabled={!tableState.hasSelectedRecords}
         onClick={() => {
+          // All selected entries must be ordered from the same supplier
+          if (selectedSuppliers.size > 1) {
+            setSupplierError(true);
+            return;
+          }
+
           setConvertSupplier(defaultSupplier);
           convertForm.open();
         }}
@@ -438,7 +509,12 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         }}
       />
     ];
-  }, [canConvert, tableState.hasSelectedRecords, defaultSupplier]);
+  }, [
+    canConvert,
+    tableState.hasSelectedRecords,
+    selectedSuppliers,
+    defaultSupplier
+  ]);
 
   return (
     <>
@@ -446,6 +522,27 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
       {editEntryForm.modal}
       {deleteEntryForm.modal}
       {convertForm.modal}
+      <Modal
+        size='lg'
+        opened={supplierError}
+        onClose={() => setSupplierError(false)}
+        title={
+          <StylishText size='lg'>{t`Cannot Create Purchase Order`}</StylishText>
+        }
+      >
+        <Stack gap='sm'>
+          <Divider />
+          <Alert color='red' icon={<IconAlertTriangle />}>
+            <Text>
+              {t`The selected items specify different suppliers. Select items from a single supplier to create a purchase order.`}
+            </Text>
+          </Alert>
+          <Divider />
+          <Group justify='right'>
+            <Button onClick={() => setSupplierError(false)}>{t`Close`}</Button>
+          </Group>
+        </Stack>
+      </Modal>
       <Stack gap='xs'>
         <Alert color='blue' icon={<IconInfoCircle />} title={t`Shopping Cart`}>
           {t`Add items to your shopping cart. These can be converted into purchase orders when ready.`}
@@ -457,6 +554,8 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
           context={context}
           props={{
             enableSelection: canConvert,
+            // Only entries with a specified supplier part can be converted
+            isRecordSelectable: (record: any) => !!record.supplier_part,
             params: {},
             rowActions: rowActions,
             tableActions: tableActions,

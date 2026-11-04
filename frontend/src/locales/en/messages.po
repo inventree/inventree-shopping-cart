@@ -161,6 +161,18 @@ msgid "Add item to cart"
 msgstr "Add item to cart"
 
 #: src/Panel.tsx
+msgid "Cannot Create Purchase Order"
+msgstr "Cannot Create Purchase Order"
+
+#: src/Panel.tsx
+msgid "The selected items specify different suppliers. Select items from a single supplier to create a purchase order."
+msgstr "The selected items specify different suppliers. Select items from a single supplier to create a purchase order."
+
+#: src/Panel.tsx
+msgid "Close"
+msgstr "Close"
+
+#: src/Panel.tsx
 msgid "Shopping Cart"
 msgstr "Shopping Cart"
 
