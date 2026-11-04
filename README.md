@@ -1,3 +1,8 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI](https://img.shields.io/pypi/v/inventree-shopping-cart)](https://pypi.org/project/inventree-shopping-cart/)
+![PEP](https://github.com/inventree/inventree-shopping-cart/actions/workflows/ci.yaml/badge.svg)
+
+
 # ShoppingCart
 
 Collect purchase requests in a shopping cart, and consolidate them into purchase orders.
