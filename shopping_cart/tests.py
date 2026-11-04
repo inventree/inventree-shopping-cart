@@ -479,3 +479,36 @@ class ShoppingCartPrimaryActionTest(ShoppingCartTestMixin, InvenTreeAPITestCase)
         # User without purchase order access
         self.clearRoles()
         self.assertEqual(self.get_actions("part", self.part.pk), [])
+
+
+class ShoppingCartDashboardTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
+    """Tests for the "Add to Cart" dashboard item."""
+
+    roles = ["purchase_order.view"]
+
+    URL = "/api/plugins/ui/features/dashboard/"
+
+    def setUp(self):
+        """Enable the plugin user interface."""
+        super().setUp()
+        InvenTreeSetting.set_setting("ENABLE_PLUGINS_INTERFACE", True, None)
+
+    def get_items(self) -> list:
+        """Return the dashboard items provided by this plugin."""
+        response = self.get(self.URL)
+        return [
+            item for item in response.data if item["plugin_name"] == "shopping-cart"
+        ]
+
+    def test_dashboard_item(self):
+        """The dashboard item is available to users with purchase order access."""
+        items = self.get_items()
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["key"], "add-to-cart")
+        self.assertRegex(
+            items[0]["source"],
+            r"/Dashboard(-[\w-]+)?\.js:RenderAddToCartDashboardItem$",
+        )
+
+        self.clearRoles()
+        self.assertEqual(self.get_items(), [])

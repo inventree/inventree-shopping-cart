@@ -1,9 +1,7 @@
 import { apiUrl, type InvenTreePluginContext } from '@inventreedb/ui';
 import { t } from '@lingui/core/macro';
+import { CART_URL, REQUIREMENTS_URL } from './CartForms';
 import { loadLocale } from './locales';
-
-const CART_URL: string = '/plugin/shopping-cart/cart/';
-const REQUIREMENTS_URL: string = '/plugin/shopping-cart/cart/requirements/';
 
 /**
  * Context data provided by the plugin backend (see core.py:get_ui_primary_actions)

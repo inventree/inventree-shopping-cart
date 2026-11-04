@@ -66,6 +66,25 @@ class ShoppingCart(AppMixin, UrlsMixin, UserInterfaceMixin, InvenTreePlugin):
             }
         ]
 
+    # Custom dashboard items
+    def get_ui_dashboard_items(self, request, context: dict, **kwargs):
+        """Dashboard item for adding a part to the shopping cart."""
+        if not check_user_role(request.user, "purchase_order", "view"):
+            return []
+
+        return [
+            {
+                "key": "add-to-cart",
+                "title": "Shopping Cart",
+                "description": "Add a part to the shopping cart",
+                "icon": "ti:shopping-cart-plus:outline",
+                "source": self.plugin_static_file(
+                    "Dashboard.js:RenderAddToCartDashboardItem"
+                ),
+                "options": {"width": 2, "height": 1},
+            }
+        ]
+
     def get_cart_target(self, context: dict):
         """Determine the part (and optional supplier part) for the current page.
 

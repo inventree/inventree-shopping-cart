@@ -2,7 +2,6 @@ import {
   ActionButton,
   AddItemButton,
   ApiEndpoints,
-  type ApiFormFieldSet,
   apiUrl,
   checkPluginVersion,
   formatDecimal,
@@ -40,12 +39,11 @@ import {
   IconInfoCircle,
   IconShoppingCartCopy
 } from '@tabler/icons-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { CART_URL, useCartEntryFields } from './CartForms';
 import { loadLocale } from './locales';
 
-const CART_URL: string = '/plugin/shopping-cart/cart/';
 const CONVERT_URL: string = '/plugin/shopping-cart/cart/convert/';
-const REQUIREMENTS_URL: string = '/plugin/shopping-cart/cart/requirements/';
 
 /**
  * Format the quantity of a cart entry, including the part units (if specified)
@@ -101,89 +99,14 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
   );
 
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
-  const [selectedPart, setSelectedPart] = useState<number | null>(null);
 
   const isOwner = useCallback(
     (record: any) => !!userId && record.user == userId,
     [userId]
   );
 
-  const entryFields: ApiFormFieldSet = useMemo(() => {
-    return {
-      part: {
-        filters: {
-          purchaseable: true,
-          virtual: false,
-          active: true
-        },
-        onValueChange: (value: any) => {
-          setSelectedPart(value || null);
-        }
-      },
-      supplier_part: {
-        disabled: !selectedPart,
-        filters: {
-          part: selectedPart || undefined,
-          active: true,
-          part_detail: true,
-          supplier_detail: true
-        }
-      },
-      quantity: {},
-      target_date: {},
-      project_code: {
-        hidden: !projectCodesEnabled
-      },
-      reason: {}
-    };
-  }, [selectedPart, projectCodesEnabled]);
-
-  // Suggested quantity for the selected part, based on the existing part requirements
-  const [suggestedQuantity, setSuggestedQuantity] = useState<number | null>(
-    null
-  );
-
-  useEffect(() => {
-    setSuggestedQuantity(null);
-
-    if (!selectedPart) {
-      return;
-    }
-
-    let cancelled = false;
-
-    context.api
-      .get(apiUrl(REQUIREMENTS_URL, selectedPart))
-      .then((response: any) => {
-        const quantity = Number.parseFloat(response.data?.suggested_quantity);
-
-        if (!cancelled && quantity > 0) {
-          setSuggestedQuantity(quantity);
-        }
-      })
-      .catch(() => {
-        // Requirements are not available (e.g. no 'part' view permission)
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedPart]);
-
-  // Note: Only the create form uses the suggested quantity
-  const createEntryFields: ApiFormFieldSet = useMemo(() => {
-    return {
-      ...entryFields,
-      quantity: {
-        ...entryFields.quantity,
-        // Suggest (but do not enter) the quantity - the user can auto-fill from the placeholder
-        placeholder: suggestedQuantity
-          ? `${suggestedQuantity}`
-          : t`Enter quantity to order`,
-        placeholderAutofill: !!suggestedQuantity
-      }
-    };
-  }, [entryFields, suggestedQuantity]);
+  const { entryFields, createEntryFields, setSelectedPart } =
+    useCartEntryFields(context);
 
   const createEntryForm = context.forms.create({
     url: apiUrl(CART_URL),

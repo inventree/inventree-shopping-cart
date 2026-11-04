@@ -13,6 +13,32 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#: src/CartForms.tsx
+#: src/PartAction.tsx
+msgid "Enter quantity to order"
+msgstr "Enter quantity to order"
+
+#: src/Dashboard.tsx
+#~ msgid "Request a part to be purchased"
+#~ msgstr "Request a part to be purchased"
+
+#: src/Dashboard.tsx
+#: src/Dashboard.tsx
+#: src/Panel.tsx
+#: src/PartAction.tsx
+msgid "Add to Cart"
+msgstr "Add to Cart"
+
+#: src/Dashboard.tsx
+#: src/Panel.tsx
+msgid "Item added to cart"
+msgstr "Item added to cart"
+
+#: src/Dashboard.tsx
+#: src/Panel.tsx
+msgid "Shopping Cart"
+msgstr "Shopping Cart"
+
 #: src/Panel.tsx
 #~ msgid "Select a supplier to create a new purchase order, or select an existing pending purchase order to add these items to."
 #~ msgstr "Select a supplier to create a new purchase order, or select an existing pending purchase order to add these items to."
@@ -20,20 +46,6 @@ msgstr ""
 #: src/Panel.tsx
 #~ msgid "Converted items will be removed from the shopping cart."
 #~ msgstr "Converted items will be removed from the shopping cart."
-
-#: src/Panel.tsx
-#: src/PartAction.tsx
-msgid "Enter quantity to order"
-msgstr "Enter quantity to order"
-
-#: src/Panel.tsx
-#: src/PartAction.tsx
-msgid "Add to Cart"
-msgstr "Add to Cart"
-
-#: src/Panel.tsx
-msgid "Item added to cart"
-msgstr "Item added to cart"
 
 #: src/Panel.tsx
 msgid "Edit Cart Item"
@@ -188,10 +200,6 @@ msgstr "The selected items specify different suppliers. Select items from a sing
 #: src/Panel.tsx
 msgid "Close"
 msgstr "Close"
-
-#: src/Panel.tsx
-msgid "Shopping Cart"
-msgstr "Shopping Cart"
 
 #: src/Panel.tsx
 msgid "Add items to your shopping cart. These can be converted into purchase orders when ready."

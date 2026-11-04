@@ -50,6 +50,7 @@ export default defineConfig({
       input: [
         './src/Panel.tsx',
         './src/PartAction.tsx',
+        './src/Dashboard.tsx',
         
         
       ],

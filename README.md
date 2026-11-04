@@ -46,6 +46,8 @@ Any user with *view* permission for purchase orders can add items to the cart. E
 
 Items can also be added using the **Add to Cart** button in the page header, on the detail page of any active, purchaseable part, or of an active supplier part for a purchaseable part. When added from a supplier part page, the supplier part is pre-selected.
 
+The **Add to Cart** dashboard item can be added to the InvenTree dashboard, providing quick access to the same form from the home page.
+
 Users can edit or remove their own requests. Users with *change* or *delete* permission for purchase orders can edit or remove any request.
 
 ### Creating Purchase Orders
