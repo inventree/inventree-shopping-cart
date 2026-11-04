@@ -14,6 +14,14 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/Panel.tsx
+#~ msgid "Select a supplier to create a new purchase order, or select an existing pending purchase order to add these items to."
+#~ msgstr ""
+
+#: src/Panel.tsx
+#~ msgid "Converted items will be removed from the shopping cart."
+#~ msgstr ""
+
+#: src/Panel.tsx
 #: src/PartAction.tsx
 msgid "Add to Cart"
 msgstr ""
@@ -47,11 +55,31 @@ msgid "Create"
 msgstr ""
 
 #: src/Panel.tsx
-msgid "Select a supplier to create a new purchase order, or select an existing pending purchase order to add these items to."
+msgid "Select a pending purchase order to add these items to."
 msgstr ""
 
 #: src/Panel.tsx
-msgid "Converted items will be removed from the shopping cart."
+msgid "Selected items will be removed from the shopping cart."
+msgstr ""
+
+#: src/Panel.tsx
+#: src/Panel.tsx
+msgid "Part"
+msgstr ""
+
+#: src/Panel.tsx
+#: src/Panel.tsx
+msgid "Supplier Part"
+msgstr ""
+
+#: src/Panel.tsx
+#: src/Panel.tsx
+msgid "Quantity"
+msgstr ""
+
+#: src/Panel.tsx
+#: src/Panel.tsx
+msgid "Required Date"
 msgstr ""
 
 #: src/Panel.tsx
@@ -61,10 +89,6 @@ msgstr ""
 #. placeholder {0}: response.reference
 #: src/Panel.tsx
 msgid "Items added to purchase order {0}"
-msgstr ""
-
-#: src/Panel.tsx
-msgid "Part"
 msgstr ""
 
 #: src/Panel.tsx
@@ -78,18 +102,6 @@ msgstr ""
 #: src/Panel.tsx
 #: src/Panel.tsx
 msgid "Supplier"
-msgstr ""
-
-#: src/Panel.tsx
-msgid "Supplier Part"
-msgstr ""
-
-#: src/Panel.tsx
-msgid "Quantity"
-msgstr ""
-
-#: src/Panel.tsx
-msgid "Required Date"
 msgstr ""
 
 #: src/Panel.tsx

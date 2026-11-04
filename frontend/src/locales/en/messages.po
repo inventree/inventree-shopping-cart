@@ -14,6 +14,14 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/Panel.tsx
+#~ msgid "Select a supplier to create a new purchase order, or select an existing pending purchase order to add these items to."
+#~ msgstr "Select a supplier to create a new purchase order, or select an existing pending purchase order to add these items to."
+
+#: src/Panel.tsx
+#~ msgid "Converted items will be removed from the shopping cart."
+#~ msgstr "Converted items will be removed from the shopping cart."
+
+#: src/Panel.tsx
 #: src/PartAction.tsx
 msgid "Add to Cart"
 msgstr "Add to Cart"
@@ -47,12 +55,32 @@ msgid "Create"
 msgstr "Create"
 
 #: src/Panel.tsx
-msgid "Select a supplier to create a new purchase order, or select an existing pending purchase order to add these items to."
-msgstr "Select a supplier to create a new purchase order, or select an existing pending purchase order to add these items to."
+msgid "Select a pending purchase order to add these items to."
+msgstr "Select a pending purchase order to add these items to."
 
 #: src/Panel.tsx
-msgid "Converted items will be removed from the shopping cart."
-msgstr "Converted items will be removed from the shopping cart."
+msgid "Selected items will be removed from the shopping cart."
+msgstr "Selected items will be removed from the shopping cart."
+
+#: src/Panel.tsx
+#: src/Panel.tsx
+msgid "Part"
+msgstr "Part"
+
+#: src/Panel.tsx
+#: src/Panel.tsx
+msgid "Supplier Part"
+msgstr "Supplier Part"
+
+#: src/Panel.tsx
+#: src/Panel.tsx
+msgid "Quantity"
+msgstr "Quantity"
+
+#: src/Panel.tsx
+#: src/Panel.tsx
+msgid "Required Date"
+msgstr "Required Date"
 
 #: src/Panel.tsx
 msgid "Purchase Order Updated"
@@ -62,10 +90,6 @@ msgstr "Purchase Order Updated"
 #: src/Panel.tsx
 msgid "Items added to purchase order {0}"
 msgstr "Items added to purchase order {0}"
-
-#: src/Panel.tsx
-msgid "Part"
-msgstr "Part"
 
 #: src/Panel.tsx
 msgid "IPN"
@@ -79,18 +103,6 @@ msgstr "Description"
 #: src/Panel.tsx
 msgid "Supplier"
 msgstr "Supplier"
-
-#: src/Panel.tsx
-msgid "Supplier Part"
-msgstr "Supplier Part"
-
-#: src/Panel.tsx
-msgid "Quantity"
-msgstr "Quantity"
-
-#: src/Panel.tsx
-msgid "Required Date"
-msgstr "Required Date"
 
 #: src/Panel.tsx
 #: src/Panel.tsx

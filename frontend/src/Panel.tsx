@@ -28,7 +28,9 @@ import {
   Divider,
   Group,
   Modal,
+  ScrollArea,
   Stack,
+  Table,
   Text,
   Tooltip
 } from '@mantine/core';
@@ -43,6 +45,16 @@ import { loadLocale } from './locales';
 
 const CART_URL: string = '/plugin/shopping-cart/cart/';
 const CONVERT_URL: string = '/plugin/shopping-cart/cart/convert/';
+
+/**
+ * Format the quantity of a cart entry, including the part units (if specified)
+ */
+function formatQuantity(record: any) {
+  const units = record.part_detail?.units;
+  const quantity = formatDecimal(record.quantity);
+
+  return units ? `${quantity} [${units}]` : quantity;
+}
 
 /**
  * Format a datetime string as a (local) YYYY-MM-DD date,
@@ -72,6 +84,9 @@ function formatDate(value?: string | null): string {
  */
 function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
   const tableState = useTable('shopping-cart');
+
+  // Note: The thumbnail component uses hooks, so it must be rendered as a component (not called directly)
+  const Thumbnail = context.thumbnail;
 
   // Permission information provided by the plugin backend
   const canConvert: boolean = !!context.context?.can_convert;
@@ -195,10 +210,39 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
     title: t`Create Purchase Order`,
     submitText: t`Create`,
     preFormContent: (
-      <Alert color='blue' icon={<IconInfoCircle />}>
-        <Text>{t`Select a pending purchase order to add these items to.`}</Text>
-        <Text>{t`Selected items will be removed from the shopping cart.`}</Text>
-      </Alert>
+      <Stack gap='xs'>
+        <Alert color='blue' icon={<IconInfoCircle />}>
+          <Text>{t`Select a pending purchase order to add these items to.`}</Text>
+          <Text>{t`Selected items will be removed from the shopping cart.`}</Text>
+        </Alert>
+        <ScrollArea.Autosize mah={250}>
+          <Table striped withTableBorder>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>{t`Part`}</Table.Th>
+                <Table.Th>{t`Supplier Part`}</Table.Th>
+                <Table.Th>{t`Quantity`}</Table.Th>
+                <Table.Th>{t`Required Date`}</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {tableState.selectedRecords.map((record: any) => (
+                <Table.Tr key={record.pk}>
+                  <Table.Td>
+                    <Thumbnail
+                      src={record.part_detail?.thumbnail}
+                      text={record.part_detail?.full_name}
+                    />
+                  </Table.Td>
+                  <Table.Td>{record.supplier_part_detail?.SKU ?? '-'}</Table.Td>
+                  <Table.Td>{formatQuantity(record)}</Table.Td>
+                  <Table.Td>{record.target_date ?? '-'}</Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </ScrollArea.Autosize>
+      </Stack>
     ),
     fields: {
       items: {
@@ -285,11 +329,12 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         title: t`Part`,
         sortable: true,
         switchable: false,
-        render: (record: any) =>
-          context.thumbnail({
-            src: record.part_detail?.thumbnail,
-            text: record.part_detail?.full_name
-          })
+        render: (record: any) => (
+          <Thumbnail
+            src={record.part_detail?.thumbnail}
+            text={record.part_detail?.full_name}
+          />
+        )
       },
       {
         accessor: 'part_detail.IPN',
@@ -310,10 +355,12 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
             return '-';
           }
 
-          return context.thumbnail({
-            src: supplier.thumbnail ?? supplier.image,
-            text: supplier.name
-          });
+          return (
+            <Thumbnail
+              src={supplier.thumbnail ?? supplier.image}
+              text={supplier.name}
+            />
+          );
         }
       },
       {
@@ -327,12 +374,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         title: t`Quantity`,
         sortable: true,
         switchable: false,
-        render: (record: any) => {
-          const units = record.part_detail?.units;
-          const quantity = formatDecimal(record.quantity);
-
-          return units ? `${quantity} [${units}]` : quantity;
-        }
+        render: (record: any) => formatQuantity(record)
       },
       {
         accessor: 'target_date',
