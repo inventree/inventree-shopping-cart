@@ -1,8 +1,9 @@
-import type { InvenTreePluginContext } from '@inventreedb/ui';
+import { apiUrl, type InvenTreePluginContext } from '@inventreedb/ui';
 import { t } from '@lingui/core/macro';
 import { loadLocale } from './locales';
 
 const CART_URL: string = '/plugin/shopping-cart/cart/';
+const REQUIREMENTS_URL: string = '/plugin/shopping-cart/cart/requirements/';
 
 /**
  * Context data provided by the plugin backend (see core.py:get_ui_primary_actions)
@@ -32,6 +33,25 @@ async function loadTranslations(context: InvenTreePluginContext) {
 }
 
 /**
+ * Fetch the suggested purchase quantity for a part, based on the existing part requirements.
+ * Returns undefined if no quantity can be suggested.
+ */
+async function fetchSuggestedQuantity(
+  context: InvenTreePluginContext,
+  part: number
+): Promise<number | undefined> {
+  try {
+    const response = await context.api.get(apiUrl(REQUIREMENTS_URL, part));
+    const quantity = Number.parseFloat(response.data?.suggested_quantity);
+
+    return quantity > 0 ? quantity : undefined;
+  } catch {
+    // Requirements are not available (e.g. no 'part' view permission)
+    return undefined;
+  }
+}
+
+/**
  * Callback function for the "Add to Cart" primary action on the part (or supplier part) detail page.
  *
  * The API form is launched via the plugin context, and rendered by the InvenTree user interface.
@@ -49,7 +69,10 @@ export async function addToCart({
     return;
   }
 
-  await loadTranslations(context);
+  const [, suggestedQuantity] = await Promise.all([
+    loadTranslations(context),
+    fetchSuggestedQuantity(context, serverContext.part)
+  ]);
 
   const projectCodesEnabled: boolean = !!context.globalSettings?.isSet?.(
     'PROJECT_CODES_ENABLED'
@@ -73,9 +96,16 @@ export async function addToCart({
         }
       },
       // Note: Only override the server-provided description if units are specified
-      quantity: serverContext.units
-        ? { description: t`Required quantity [${serverContext.units}]` }
-        : {},
+      quantity: {
+        // Suggest (but do not enter) the quantity - the user can auto-fill from the placeholder
+        placeholder: suggestedQuantity
+          ? `${suggestedQuantity}`
+          : t`Enter quantity to order`,
+        placeholderAutofill: !!suggestedQuantity,
+        ...(serverContext.units
+          ? { description: t`Required quantity [${serverContext.units}]` }
+          : {})
+      },
       target_date: {},
       project_code: {
         hidden: !projectCodesEnabled

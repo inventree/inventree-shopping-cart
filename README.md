@@ -74,8 +74,11 @@ Converted requests are removed from the cart.
 | `/plugin/shopping-cart/cart/` | List and create cart entries |
 | `/plugin/shopping-cart/cart/<pk>/` | Retrieve, update or delete a cart entry |
 | `/plugin/shopping-cart/cart/convert/` | Convert cart entries into a purchase order |
+| `/plugin/shopping-cart/cart/requirements/<part>/` | Suggested purchase quantity for a part (requires `part` view permission) |
 
-The list endpoint supports the following filters: `part`, `supplier_part`, `project_code`, `user`, `mine`, `has_supplier_part` and `supplier`.
+The list endpoint supports the following filters: `part`, `supplier_part`, `project_code`, `user`, `mine`, `has_supplier_part`, `supplier` and `overdue`.
+
+The suggested quantity is the shortfall between the quantity required (open build orders, open sales orders and the part's minimum stock level) and the quantity available (total stock, quantity on order, and quantity already in the cart).
 
 ## Development
 

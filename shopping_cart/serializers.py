@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
+from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -122,6 +123,69 @@ class ShoppingCartEntrySerializer(InvenTreeModelSerializer):
             validated_data["user"] = request.user
 
         return super().create(validated_data)
+
+
+class ShoppingCartRequirementsSerializer(serializers.Serializer):
+    """Purchase requirements for a particular part.
+
+    The suggested quantity is the shortfall between what is required
+    (open build orders, open sales orders and minimum stock level)
+    and what is available (stock, incoming purchase orders, and existing cart entries).
+    """
+
+    class Meta:
+        """Meta options for this serializer."""
+
+        fields = [
+            "part",
+            "required_for_build_orders",
+            "required_for_sales_orders",
+            "minimum_stock",
+            "total_stock",
+            "on_order",
+            "in_cart",
+            "suggested_quantity",
+        ]
+
+    part = serializers.IntegerField(source="pk", read_only=True)
+
+    required_for_build_orders = InvenTreeDecimalField(
+        source="required_build_order_quantity", read_only=True
+    )
+    required_for_sales_orders = InvenTreeDecimalField(
+        source="required_sales_order_quantity", read_only=True
+    )
+    minimum_stock = InvenTreeDecimalField(read_only=True)
+    total_stock = InvenTreeDecimalField(read_only=True)
+    on_order = InvenTreeDecimalField(read_only=True)
+    in_cart = InvenTreeDecimalField(read_only=True)
+    suggested_quantity = InvenTreeDecimalField(read_only=True)
+
+    def to_representation(self, instance):
+        """Calculate the requirements for the provided part."""
+        required_build = Decimal(instance.required_build_order_quantity())
+        required_sales = Decimal(instance.required_sales_order_quantity())
+        minimum_stock = Decimal(instance.minimum_stock or 0)
+        total_stock = Decimal(instance.total_stock)
+        on_order = Decimal(instance.on_order)
+
+        in_cart = ShoppingCartEntry.objects.filter(part=instance).aggregate(
+            total=Sum("quantity")
+        )["total"] or Decimal(0)
+
+        required = required_build + required_sales + minimum_stock
+        available = total_stock + on_order + in_cart
+
+        return super().to_representation({
+            "pk": instance.pk,
+            "required_build_order_quantity": required_build,
+            "required_sales_order_quantity": required_sales,
+            "minimum_stock": minimum_stock,
+            "total_stock": total_stock,
+            "on_order": on_order,
+            "in_cart": in_cart,
+            "suggested_quantity": max(required - available, Decimal(0)),
+        })
 
 
 class ShoppingCartConvertSerializer(serializers.Serializer):

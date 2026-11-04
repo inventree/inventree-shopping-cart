@@ -23,6 +23,11 @@ msgstr ""
 
 #: src/Panel.tsx
 #: src/PartAction.tsx
+msgid "Enter quantity to order"
+msgstr ""
+
+#: src/Panel.tsx
+#: src/PartAction.tsx
 msgid "Add to Cart"
 msgstr ""
 

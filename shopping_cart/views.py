@@ -7,12 +7,22 @@ from rest_framework.response import Response
 
 from company.models import Company
 from InvenTree.filters import SEARCH_ORDER_FILTER
-from InvenTree.mixins import CreateAPI, ListCreateAPI, RetrieveUpdateDestroyAPI
+from InvenTree.mixins import (
+    CreateAPI,
+    ListCreateAPI,
+    RetrieveAPI,
+    RetrieveUpdateDestroyAPI,
+)
 from InvenTree.permissions import RolePermission
+from part.models import Part
 from users.permissions import check_user_role
 
 from .models import ShoppingCartEntry
-from .serializers import ShoppingCartConvertSerializer, ShoppingCartEntrySerializer
+from .serializers import (
+    ShoppingCartConvertSerializer,
+    ShoppingCartEntrySerializer,
+    ShoppingCartRequirementsSerializer,
+)
 
 
 class ShoppingCartEntryPermission(permissions.BasePermission):
@@ -178,6 +188,27 @@ class ShoppingCartEntryDetail(ShoppingCartEntryMixin, RetrieveUpdateDestroyAPI):
     """API endpoint for retrieving, updating and deleting a single cart entry."""
 
 
+class ShoppingCartRequirements(RetrieveAPI):
+    """API endpoint returning the purchase requirements for a particular part.
+
+    Used to suggest a quantity when adding a part to the cart.
+    Requires access to both the shopping cart and part information.
+    """
+
+    permission_classes = [permissions.IsAuthenticated, RolePermission]
+    role_required = "purchase_order"
+
+    serializer_class = ShoppingCartRequirementsSerializer
+    queryset = Part.objects.filter(purchaseable=True)
+
+    def check_permissions(self, request):
+        """Stock and requirement information also requires 'part' view permission."""
+        super().check_permissions(request)
+
+        if not check_user_role(request.user, "part", "view"):
+            self.permission_denied(request)
+
+
 class ShoppingCartConvert(CreateAPI):
     """API endpoint for converting cart entries into a purchase order.
 
@@ -212,6 +243,11 @@ def construct_urls():
             "cart/",
             include([
                 path("convert/", ShoppingCartConvert.as_view(), name="cart-convert"),
+                path(
+                    "requirements/<int:pk>/",
+                    ShoppingCartRequirements.as_view(),
+                    name="cart-requirements",
+                ),
                 path(
                     "<int:pk>/",
                     ShoppingCartEntryDetail.as_view(),

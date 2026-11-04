@@ -13,11 +13,13 @@ from order.models import PurchaseOrder
 from order.status_codes import PurchaseOrderStatus
 from part.models import Part
 from plugin import registry
+from stock.models import StockItem
 
 from .models import ShoppingCartEntry
 
 CART_URL = "/plugin/shopping-cart/cart/"
 CONVERT_URL = "/plugin/shopping-cart/cart/convert/"
+REQUIREMENTS_URL = "/plugin/shopping-cart/cart/requirements/"
 
 
 class ShoppingCartTestMixin:
@@ -239,6 +241,51 @@ class ShoppingCartEntryTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
         # The overdue status is also returned for a single entry
         response = self.get(f"{CART_URL}{overdue.pk}/")
         self.assertTrue(response.data["overdue"])
+
+
+class ShoppingCartRequirementsTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
+    """Tests for the suggested quantity calculation."""
+
+    roles = ["purchase_order.view", "part.view"]
+
+    def test_suggested_quantity(self):
+        """The suggested quantity accounts for stock and existing cart entries."""
+        url = f"{REQUIREMENTS_URL}{self.part.pk}/"
+
+        # No requirements - nothing to order
+        response = self.get(url)
+        self.assertEqual(response.data["part"], self.part.pk)
+        self.assertEqual(Decimal(response.data["suggested_quantity"]), 0)
+
+        self.part.minimum_stock = 50
+        self.part.save()
+
+        response = self.get(url)
+        self.assertEqual(Decimal(response.data["suggested_quantity"]), 50)
+
+        # Existing stock reduces the shortfall
+        StockItem.objects.create(part=self.part, quantity=10)
+
+        # Quantities already in the cart reduce the shortfall
+        ShoppingCartEntry.objects.create(part=self.part, quantity=5, user=self.user)
+
+        response = self.get(url)
+        self.assertEqual(Decimal(response.data["total_stock"]), 10)
+        self.assertEqual(Decimal(response.data["in_cart"]), 5)
+        self.assertEqual(Decimal(response.data["suggested_quantity"]), 35)
+
+        # Never suggest a negative quantity
+        StockItem.objects.create(part=self.part, quantity=100)
+        response = self.get(url)
+        self.assertEqual(Decimal(response.data["suggested_quantity"]), 0)
+
+    def test_permissions(self):
+        """Part view permission is required, and the part must be purchaseable."""
+        self.get(f"{REQUIREMENTS_URL}{self.assembly.pk}/", expected_code=404)
+
+        self.clearRoles()
+        self.assignRole("purchase_order.view")
+        self.get(f"{REQUIREMENTS_URL}{self.part.pk}/", expected_code=403)
 
 
 class ShoppingCartConvertTest(ShoppingCartTestMixin, InvenTreeAPITestCase):

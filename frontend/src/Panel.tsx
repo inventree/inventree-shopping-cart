@@ -40,11 +40,12 @@ import {
   IconInfoCircle,
   IconShoppingCartCopy
 } from '@tabler/icons-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadLocale } from './locales';
 
 const CART_URL: string = '/plugin/shopping-cart/cart/';
 const CONVERT_URL: string = '/plugin/shopping-cart/cart/convert/';
+const REQUIREMENTS_URL: string = '/plugin/shopping-cart/cart/requirements/';
 
 /**
  * Format the quantity of a cart entry, including the part units (if specified)
@@ -112,6 +113,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
       part: {
         filters: {
           purchaseable: true,
+          virtual: false,
           active: true
         },
         onValueChange: (value: any) => {
@@ -136,10 +138,57 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
     };
   }, [selectedPart, projectCodesEnabled]);
 
+  // Suggested quantity for the selected part, based on the existing part requirements
+  const [suggestedQuantity, setSuggestedQuantity] = useState<number | null>(
+    null
+  );
+
+  useEffect(() => {
+    setSuggestedQuantity(null);
+
+    if (!selectedPart) {
+      return;
+    }
+
+    let cancelled = false;
+
+    context.api
+      .get(apiUrl(REQUIREMENTS_URL, selectedPart))
+      .then((response: any) => {
+        const quantity = Number.parseFloat(response.data?.suggested_quantity);
+
+        if (!cancelled && quantity > 0) {
+          setSuggestedQuantity(quantity);
+        }
+      })
+      .catch(() => {
+        // Requirements are not available (e.g. no 'part' view permission)
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPart]);
+
+  // Note: Only the create form uses the suggested quantity
+  const createEntryFields: ApiFormFieldSet = useMemo(() => {
+    return {
+      ...entryFields,
+      quantity: {
+        ...entryFields.quantity,
+        // Suggest (but do not enter) the quantity - the user can auto-fill from the placeholder
+        placeholder: suggestedQuantity
+          ? `${suggestedQuantity}`
+          : t`Enter quantity to order`,
+        placeholderAutofill: !!suggestedQuantity
+      }
+    };
+  }, [entryFields, suggestedQuantity]);
+
   const createEntryForm = context.forms.create({
     url: apiUrl(CART_URL),
     title: t`Add to Cart`,
-    fields: entryFields,
+    fields: createEntryFields,
     successMessage: t`Item added to cart`,
     table: tableState
   });
@@ -390,7 +439,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
           }
 
           return (
-            <Group gap='xs' wrap='nowrap'>
+            <Group gap='xs' wrap='nowrap' justify='space-between'>
               <Text size='sm'>{record.target_date}</Text>
               <Tooltip label={t`Overdue`}>
                 <IconAlertTriangle
