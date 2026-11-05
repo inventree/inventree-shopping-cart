@@ -119,6 +119,10 @@ msgid "Supplier"
 msgstr ""
 
 #: src/Panel.tsx
+msgid "Link"
+msgstr ""
+
+#: src/Panel.tsx
 #: src/Panel.tsx
 #: src/Panel.tsx
 msgid "Overdue"
@@ -176,6 +180,10 @@ msgstr ""
 
 #: src/Panel.tsx
 msgid "View Part"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "View Supplier Part"
 msgstr ""
 
 #: src/Panel.tsx

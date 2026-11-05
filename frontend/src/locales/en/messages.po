@@ -119,6 +119,10 @@ msgid "Supplier"
 msgstr "Supplier"
 
 #: src/Panel.tsx
+msgid "Link"
+msgstr "Link"
+
+#: src/Panel.tsx
 #: src/Panel.tsx
 #: src/Panel.tsx
 msgid "Overdue"
@@ -177,6 +181,10 @@ msgstr "Filter by project code"
 #: src/Panel.tsx
 msgid "View Part"
 msgstr "View Part"
+
+#: src/Panel.tsx
+msgid "View Supplier Part"
+msgstr "View Supplier Part"
 
 #: src/Panel.tsx
 msgid "Create purchase order from selected items"

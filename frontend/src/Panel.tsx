@@ -22,6 +22,7 @@ import {
 import { t } from '@lingui/core/macro';
 import {
   Alert,
+  Anchor,
   Button,
   Center,
   Divider,
@@ -37,6 +38,7 @@ import { notifications } from '@mantine/notifications';
 import {
   IconAlertTriangle,
   IconInfoCircle,
+  IconLink,
   IconShoppingCartCopy
 } from '@tabler/icons-react';
 import { useCallback, useMemo, useState } from 'react';
@@ -81,6 +83,23 @@ function formatDate(value?: string | null): string {
  * - Any user can add requests to the cart, and edit their own requests
  * - Purchasing users can convert selected requests into a purchase order
  */
+/**
+ * Return the URL only if it is an absolute http(s) link,
+ * to prevent rendering e.g. "javascript:" URLs from user-supplied data.
+ */
+function safeExternalUrl(value?: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
   const tableState = useTable('shopping-cart');
 
@@ -342,6 +361,31 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         render: (record: any) => record.supplier_part_detail?.SKU ?? '-'
       },
       {
+        accessor: 'supplier_part_detail.link',
+        title: t`Link`,
+        sortable: false,
+        render: (record: any) => {
+          const url = safeExternalUrl(record.supplier_part_detail?.link);
+
+          if (!url) {
+            return '-';
+          }
+
+          return (
+            <Anchor
+              href={url}
+              target='_blank'
+              rel='noopener noreferrer'
+              title={url}
+              aria-label='cart-entry-supplier-link'
+              onClick={(event: any) => event.stopPropagation()}
+            >
+              <IconLink size={18} />
+            </Anchor>
+          );
+        }
+      },
+      {
         accessor: 'quantity',
         title: t`Quantity`,
         sortable: true,
@@ -471,6 +515,13 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
           modelType: ModelType.part,
           modelId: record.part,
           navigate: context.navigate
+        }),
+        RowViewAction({
+          title: t`View Supplier Part`,
+          modelType: ModelType.supplierpart,
+          modelId: record.supplier_part,
+          navigate: context.navigate,
+          hidden: !record.supplier_part
         }),
         RowEditAction({
           hidden: !isOwner(record) && !canChange,

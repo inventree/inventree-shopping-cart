@@ -35,6 +35,7 @@ class SupplierPartBriefSerializer(InvenTreeModelSerializer):
             "supplier",
             "supplier_detail",
             "pack_quantity",
+            "link",
         ]
 
     supplier_detail = CompanyBriefSerializer(source="supplier", read_only=True)
