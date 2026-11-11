@@ -6,7 +6,6 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 
 from company.models import Company
-from data_exporter.mixins import DataExportViewMixin
 from InvenTree.filters import SEARCH_ORDER_FILTER
 from InvenTree.mixins import (
     CreateAPI,
@@ -146,11 +145,8 @@ class ShoppingCartEntryFilter(rest_filters.FilterSet):
         return queryset.filter(Q1 | Q2).distinct()
 
 
-class ShoppingCartEntryList(ShoppingCartEntryMixin, DataExportViewMixin, ListCreateAPI):
-    """API endpoint for listing and creating cart entries.
-
-    Supports data export via a GET request with 'export=true'.
-    """
+class ShoppingCartEntryList(ShoppingCartEntryMixin, ListCreateAPI):
+    """API endpoint for listing and creating cart entries."""
 
     filterset_class = ShoppingCartEntryFilter
 

@@ -157,6 +157,21 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
     ignorePermissionCheck: true
   });
 
+  // Only entries with a specified supplier part can be converted
+  const canConvertSelection: boolean = useMemo(() => {
+    return (
+      tableState.selectedRecords.length > 0 &&
+      tableState.selectedRecords.every((record: any) => !!record.supplier_part)
+    );
+  }, [tableState.selectedRecords]);
+
+  // Users may only (bulk) delete their own entries, unless they have the 'delete' permission
+  // Note: The backend enforces this permission check
+  const canDeleteRecord = useCallback(
+    (record: any) => canDelete || isOwner(record),
+    [canDelete, isOwner]
+  );
+
   // Import cart entries from a file, using the InvenTree data importer
   // Note: Imported entries are assigned to the importing user (enforced by the backend)
   const importEntriesForm = context.forms.create({
@@ -581,7 +596,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
           }
         }),
         RowDeleteAction({
-          hidden: !isOwner(record) && !canDelete,
+          hidden: !canDeleteRecord(record),
           onClick: () => {
             setSelectedRecord(record);
             deleteEntryForm.open();
@@ -589,7 +604,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         })
       ];
     },
-    [isOwner, canChange, canDelete, editEntryForm, deleteEntryForm]
+    [isOwner, canChange, canDeleteRecord, editEntryForm, deleteEntryForm]
   );
 
   const tableActions = useMemo(() => {
@@ -601,7 +616,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         icon={<IconShoppingCartCopy />}
         color='blue'
         hidden={!canConvert}
-        disabled={!tableState.hasSelectedRecords}
+        disabled={!canConvertSelection}
         onClick={() => {
           // All selected entries must be ordered from the same supplier
           if (selectedSuppliers.size > 1) {
@@ -634,7 +649,6 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
     ];
   }, [
     canConvert,
-    canChange,
     tableState.hasSelectedRecords,
     selectedSuppliers,
     defaultSupplier
@@ -681,7 +695,6 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
             enableSelection: canConvert,
             // Only entries with a specified supplier part can be converted
             isRecordSelectable: (record: any) => !!record.supplier_part,
-            enableDownload: true,
             params: {},
             rowActions: rowActions,
             tableActions: tableActions,

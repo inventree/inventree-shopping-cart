@@ -41,6 +41,8 @@ export function useCartEntryFields(context: InvenTreePluginContext) {
         disabled: !selectedPart,
         filters: {
           part: selectedPart || undefined,
+          // Display the primary supplier part first
+          ordering: '-primary',
           active: true,
           part_detail: true,
           supplier_detail: true
@@ -87,10 +89,20 @@ export function useCartEntryFields(context: InvenTreePluginContext) {
     };
   }, [selectedPart]);
 
-  // Note: Only the create form uses the suggested quantity
+  // Note: Only the create form uses the suggested quantity,
+  // and auto-fills the primary supplier part for the selected part
   const createEntryFields: ApiFormFieldSet = useMemo(() => {
     return {
       ...entryFields,
+      supplier_part: {
+        ...entryFields.supplier_part,
+        // Only auto-fill once a part is selected,
+        // otherwise the primary supplier part of an unrelated part could be selected
+        autoFill: !!selectedPart,
+        autoFillFilters: {
+          primary: true
+        }
+      },
       quantity: {
         ...entryFields.quantity,
         // Suggest (but do not enter) the quantity - the user can auto-fill from the placeholder
@@ -100,7 +112,7 @@ export function useCartEntryFields(context: InvenTreePluginContext) {
         placeholderAutofill: !!suggestedQuantity
       }
     };
-  }, [entryFields, suggestedQuantity]);
+  }, [entryFields, selectedPart, suggestedQuantity]);
 
   return { entryFields, createEntryFields, setSelectedPart };
 }

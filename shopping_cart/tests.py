@@ -154,6 +154,40 @@ class ShoppingCartEntryTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
         self.assignRole("purchase_order.change")
         self.patch(f"{CART_URL}{theirs.pk}/", {"quantity": 3})
 
+    def test_bulk_delete(self):
+        """Users can bulk delete their own entries, but not those of other users."""
+        mine = [
+            ShoppingCartEntry.objects.create(part=self.part, quantity=1, user=self.user)
+            for _ in range(3)
+        ]
+        theirs = ShoppingCartEntry.objects.create(
+            part=self.part, quantity=1, user=self.other_user
+        )
+
+        # No items specified
+        self.delete(CART_URL, {}, expected_code=400)
+
+        # Including another user's entry rejects the entire operation
+        self.delete(
+            CART_URL,
+            {"items": [mine[0].pk, theirs.pk]},
+            expected_code=403,
+        )
+        self.assertEqual(ShoppingCartEntry.objects.count(), 4)
+
+        # The 'all' filter cannot be used to delete other users' entries
+        self.delete(f"{CART_URL}?all=true", {}, expected_code=403)
+        self.assertEqual(ShoppingCartEntry.objects.count(), 4)
+
+        # Delete own entries
+        self.delete(CART_URL, {"items": [mine[0].pk, mine[1].pk]}, expected_code=200)
+        self.assertEqual(ShoppingCartEntry.objects.count(), 2)
+
+        # Purchasing users (with 'delete' permission) can delete any entry
+        self.assignRole("purchase_order.delete")
+        self.delete(CART_URL, {"items": [mine[2].pk, theirs.pk]}, expected_code=200)
+        self.assertEqual(ShoppingCartEntry.objects.count(), 0)
+
     def test_export(self):
         """Test data export for cart entries."""
         ShoppingCartEntry.objects.create(
