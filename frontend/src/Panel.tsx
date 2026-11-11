@@ -649,7 +649,8 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
     ];
   }, [
     canConvert,
-    tableState.hasSelectedRecords,
+    canChange,
+    canConvertSelection,
     selectedSuppliers,
     defaultSupplier
   ]);
@@ -692,9 +693,10 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
           columns={tableColumns}
           context={context}
           props={{
-            enableSelection: canConvert,
-            // Only entries with a specified supplier part can be converted
-            isRecordSelectable: (record: any) => !!record.supplier_part,
+            enableSelection: true,
+            enableBulkDelete: true,
+            bulkDeleteFilter: canDeleteRecord,
+            enableDownload: true,
             params: {},
             rowActions: rowActions,
             tableActions: tableActions,
