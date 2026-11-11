@@ -86,8 +86,15 @@ export async function addToCart({
       },
       supplier_part: {
         value: serverContext.supplier_part ?? undefined,
+        // Auto-fill the primary supplier part (if not already specified)
+        autoFill: true,
+        autoFillFilters: {
+          primary: true
+        },
         filters: {
           part: serverContext.part,
+          // Display the primary supplier part first
+          ordering: '-primary',
           active: true,
           part_detail: true,
           supplier_detail: true
