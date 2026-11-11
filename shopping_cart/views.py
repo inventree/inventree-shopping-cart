@@ -1,11 +1,15 @@
 """API views for the ShoppingCart plugin."""
 
 from django.db.models import BooleanField, Case, Q, Value, When
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as rest_filters
 from rest_framework import permissions, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from company.models import Company
+from data_exporter.mixins import DataExportViewMixin
+from InvenTree.api import BulkDeleteMixin
 from InvenTree.filters import SEARCH_ORDER_FILTER
 from InvenTree.mixins import (
     CreateAPI,
@@ -145,8 +149,37 @@ class ShoppingCartEntryFilter(rest_filters.FilterSet):
         return queryset.filter(Q1 | Q2).distinct()
 
 
-class ShoppingCartEntryList(ShoppingCartEntryMixin, ListCreateAPI):
-    """API endpoint for listing and creating cart entries."""
+class ShoppingCartEntryList(
+    ShoppingCartEntryMixin, BulkDeleteMixin, DataExportViewMixin, ListCreateAPI
+):
+    """API endpoint for listing and creating cart entries.
+
+    - Supports bulk deletion of multiple entries via a DELETE request
+    - Supports data export via a GET request with 'export=true'
+    """
+
+    def validate_delete(self, queryset, request) -> None:
+        """Enforce object level permissions for bulk deletion.
+
+        The object level permission checks are not applied to list endpoints,
+        so they must be enforced here:
+
+        - Users can delete their own entries
+        - Purchasing users (with 'delete' permission) can delete any entry
+
+        If *any* of the selected entries cannot be deleted, the entire operation is rejected.
+        """
+        user = request.user
+
+        if user.is_superuser or check_user_role(user, "purchase_order", "delete"):
+            return
+
+        if queryset.exclude(user=user).exists():
+            raise PermissionDenied(
+                _(
+                    "You do not have permission to delete entries requested by other users"
+                )
+            )
 
     filterset_class = ShoppingCartEntryFilter
 
