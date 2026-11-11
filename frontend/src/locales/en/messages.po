@@ -61,6 +61,10 @@ msgid "Item removed from cart"
 msgstr "Item removed from cart"
 
 #: src/Panel.tsx
+msgid "Import Cart Items"
+msgstr "Import Cart Items"
+
+#: src/Panel.tsx
 msgid "Create Purchase Order"
 msgstr "Create Purchase Order"
 
@@ -189,6 +193,10 @@ msgstr "View Supplier Part"
 #: src/Panel.tsx
 msgid "Create purchase order from selected items"
 msgstr "Create purchase order from selected items"
+
+#: src/Panel.tsx
+msgid "Import items from file"
+msgstr "Import items from file"
 
 #: src/Panel.tsx
 msgid "Add item to cart"
