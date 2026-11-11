@@ -30,6 +30,25 @@ class ShoppingCartEntry(models.Model):
         """String representation of the cart entry."""
         return f"{self.quantity} x {self.part.full_name}"
 
+    @classmethod
+    def check_user_permission(cls, user, permission: str) -> bool:
+        """Custom permission check for this (plugin defined) model.
+
+        Plugin models do not have ruleset definitions, so InvenTree falls back
+        to this method (e.g. when checking permission to import data).
+
+        Permissions are mapped onto the 'purchase_order' role:
+        - Any user who can view purchase orders can view the cart
+        - Other actions (e.g. data import) require the matching role permission,
+          as the importer is not subject to the per-entry ownership checks
+        """
+        from users.permissions import check_user_role
+
+        if permission not in ["view", "add", "change", "delete"]:
+            return False
+
+        return check_user_role(user, "purchase_order", permission)
+
     @staticmethod
     def overdue_filter():
         """Filter for cart entries which are past their required date."""

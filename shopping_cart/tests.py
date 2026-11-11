@@ -188,6 +188,41 @@ class ShoppingCartEntryTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
         self.delete(CART_URL, {"items": [mine[2].pk, theirs.pk]}, expected_code=200)
         self.assertEqual(ShoppingCartEntry.objects.count(), 0)
 
+    def test_export(self):
+        """Test data export for cart entries."""
+        ShoppingCartEntry.objects.create(
+            part=self.part, supplier_part=self.sp_a, quantity=5, user=self.user
+        )
+        ShoppingCartEntry.objects.create(
+            part=self.cable, quantity=2, user=self.other_user
+        )
+
+        with self.export_data(CART_URL) as data_file:
+            self.process_csv(
+                data_file,
+                required_cols=["Part", "Supplier Part", "Quantity"],
+                required_rows=2,
+            )
+
+    def test_import_permission(self):
+        """Importing data requires the 'change' permission for purchase orders.
+
+        The importer does not apply the per-entry ownership checks,
+        so it is restricted to purchasing users (who can edit any entry).
+        """
+        from importer.models import DataImportSession
+        from importer.registry import supported_models
+
+        self.assertIn("shoppingcartentry", supported_models())
+
+        session = DataImportSession(model_type="shoppingcartentry")
+
+        # User can view purchase orders (and thus use the cart), but not import
+        self.assertFalse(session.check_import_permission(self.user))
+
+        self.assignRole("purchase_order.change")
+        self.assertTrue(session.check_import_permission(self.user))
+
     def test_filters(self):
         """Test the custom list filters."""
         ShoppingCartEntry.objects.create(part=self.part, quantity=1, user=self.user)

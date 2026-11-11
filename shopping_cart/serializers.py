@@ -12,6 +12,8 @@ from rest_framework import serializers
 from common.serializers import ProjectCodeSerializer
 from company.models import Company, SupplierPart
 from company.serializers import CompanyBriefSerializer
+from importer.registry import register_importer
+from InvenTree.mixins import DataImportExportSerializerMixin
 from InvenTree.serializers import InvenTreeDecimalField, InvenTreeModelSerializer
 from order.models import PurchaseOrder, PurchaseOrderLineItem
 from order.status_codes import PurchaseOrderStatus
@@ -41,8 +43,15 @@ class SupplierPartBriefSerializer(InvenTreeModelSerializer):
     supplier_detail = CompanyBriefSerializer(source="supplier", read_only=True)
 
 
-class ShoppingCartEntrySerializer(InvenTreeModelSerializer):
-    """Serializer for the ShoppingCartEntry model."""
+@register_importer()
+class ShoppingCartEntrySerializer(
+    DataImportExportSerializerMixin, InvenTreeModelSerializer
+):
+    """Serializer for the ShoppingCartEntry model.
+
+    Supports data import and export:
+    - Imported entries are always assigned to the importing user
+    """
 
     class Meta:
         """Meta options for this serializer."""
