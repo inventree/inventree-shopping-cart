@@ -37,6 +37,7 @@ import {
 import { notifications } from '@mantine/notifications';
 import {
   IconAlertTriangle,
+  IconFileUpload,
   IconInfoCircle,
   IconLink,
   IconShoppingCartCopy
@@ -46,6 +47,9 @@ import { CART_URL, useCartEntryFields } from './CartForms';
 import { loadLocale } from './locales';
 
 const CONVERT_URL: string = '/plugin/shopping-cart/cart/convert/';
+
+// Model type used by the InvenTree data importer for cart entries
+const CART_MODEL_TYPE: string = 'shoppingcartentry';
 
 /**
  * Format the quantity of a cart entry, including the part units (if specified)
@@ -151,6 +155,51 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
     // Users may delete their own entries without the global delete permission
     // The backend enforces the object level permission check
     ignorePermissionCheck: true
+  });
+
+  // Import cart entries from a file, using the InvenTree data importer
+  // Note: Imported entries are assigned to the importing user (enforced by the backend)
+  const importEntriesForm = context.forms.create({
+    url: apiUrl(ApiEndpoints.import_session_list),
+    title: t`Import Cart Items`,
+    fields: {
+      data_file: {},
+      model_type: {
+        value: CART_MODEL_TYPE,
+        hidden: true
+      },
+      // Only allow new entries to be created (not existing entries updated)
+      update_records: {
+        value: false,
+        hidden: true
+      },
+      field_defaults: {
+        value: {},
+        hidden: true
+      },
+      field_overrides: {
+        value: {},
+        hidden: true
+      },
+      field_filters: {
+        value: {
+          part: {
+            purchaseable: true,
+            active: true
+          },
+          supplier_part: {
+            active: true
+          }
+        },
+        hidden: true
+      }
+    },
+    successMessage: null,
+    onFormSuccess: (response: any) => {
+      context.importer.open(response.pk, {
+        onClose: () => tableState.refreshTable()
+      });
+    }
   });
 
   // Suppliers specified by the selected entries (entries without a supplier part are ignored)
@@ -564,6 +613,15 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
           convertForm.open();
         }}
       />,
+      <ActionButton
+        key='import'
+        tooltip={t`Import items from file`}
+        tooltipAlignment='top-start'
+        icon={<IconFileUpload />}
+        // Importing requires the 'change' permission (enforced by the backend)
+        hidden={!canChange}
+        onClick={() => importEntriesForm.open()}
+      />,
       <AddItemButton
         key='add'
         tooltip={t`Add item to cart`}
@@ -576,6 +634,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
     ];
   }, [
     canConvert,
+    canChange,
     tableState.hasSelectedRecords,
     selectedSuppliers,
     defaultSupplier
@@ -587,6 +646,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
       {editEntryForm.modal}
       {deleteEntryForm.modal}
       {convertForm.modal}
+      {importEntriesForm.modal}
       <Modal
         size='lg'
         opened={supplierError}
@@ -621,6 +681,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
             enableSelection: canConvert,
             // Only entries with a specified supplier part can be converted
             isRecordSelectable: (record: any) => !!record.supplier_part,
+            enableDownload: true,
             params: {},
             rowActions: rowActions,
             tableActions: tableActions,
