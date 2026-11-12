@@ -31,6 +31,18 @@ This plugin requires InvenTree 1.7.0 or newer, and the following global settings
 - **Enable URL integration**: The plugin provides custom API endpoints.
 - **Enable interface integration**: The plugin provides a custom UI panel.
 
+### Plugin Settings
+
+The following plugin settings control which fields must be provided for each shopping cart entry:
+
+| Setting | Description |
+| --- | --- |
+| Require Project Code | Cart entries must specify a project code (only applies if project codes are enabled) |
+| Require Destination | Cart entries must specify a destination location |
+| Require Reason | Cart entries must specify a reason for the purchase |
+
+Required fields are enforced by the API (including data import), and cannot be cleared from existing entries.
+
 ## Usage
 
 The *Shopping Cart* panel is displayed on the **Purchasing** page.

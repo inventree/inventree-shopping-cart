@@ -1,13 +1,15 @@
 """Collect purchase requests in a shopping cart, and consolidate them into purchase orders"""
 
 from plugin import InvenTreePlugin
-from plugin.mixins import AppMixin, UrlsMixin, UserInterfaceMixin
+from plugin.mixins import AppMixin, SettingsMixin, UrlsMixin, UserInterfaceMixin
 from users.permissions import check_user_role
 
 from . import PLUGIN_VERSION
 
 
-class ShoppingCart(AppMixin, UrlsMixin, UserInterfaceMixin, InvenTreePlugin):
+class ShoppingCart(
+    AppMixin, SettingsMixin, UrlsMixin, UserInterfaceMixin, InvenTreePlugin
+):
     """ShoppingCart - custom InvenTree plugin."""
 
     # Plugin metadata
@@ -24,6 +26,48 @@ class ShoppingCart(AppMixin, UrlsMixin, UserInterfaceMixin, InvenTreePlugin):
 
     # Primary actions receive the target model and ID from 1.7.0
     MIN_VERSION = "1.7.0"
+
+    # Plugin settings (from SettingsMixin)
+    # Ref: https://docs.inventree.org/en/latest/plugins/mixins/settings/
+    SETTINGS = {
+        "REQUIRE_PROJECT_CODE": {
+            "name": "Require Project Code",
+            "description": "Cart entries must specify a project code (only applies if project codes are enabled)",
+            "validator": bool,
+            "default": False,
+        },
+        "REQUIRE_DESTINATION": {
+            "name": "Require Destination",
+            "description": "Cart entries must specify a destination location",
+            "validator": bool,
+            "default": False,
+        },
+        "REQUIRE_REASON": {
+            "name": "Require Reason",
+            "description": "Cart entries must specify a reason for the purchase",
+            "validator": bool,
+            "default": False,
+        },
+    }
+
+    def required_fields(self) -> list[str]:
+        """Return the cart entry fields which are required, based on the plugin settings."""
+        from common.settings import get_global_setting
+
+        fields = []
+
+        if self.get_setting("REQUIRE_PROJECT_CODE") and get_global_setting(
+            "PROJECT_CODES_ENABLED"
+        ):
+            fields.append("project_code")
+
+        if self.get_setting("REQUIRE_DESTINATION"):
+            fields.append("destination")
+
+        if self.get_setting("REQUIRE_REASON"):
+            fields.append("reason")
+
+        return fields
 
     # Custom URL endpoints (from UrlsMixin)
     # Ref: https://docs.inventree.org/en/latest/plugins/mixins/urls/

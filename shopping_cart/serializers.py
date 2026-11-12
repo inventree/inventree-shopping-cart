@@ -121,6 +121,34 @@ class ShoppingCartEntrySerializer(
     )
     user_detail = UserSerializer(source="user", read_only=True, allow_null=True)
 
+    def __init__(self, *args, **kwargs):
+        """Mark fields as required, based on the plugin settings.
+
+        The 'required' state is also reported via the API metadata (OPTIONS),
+        so that the user interface forms display the fields as required.
+        """
+        super().__init__(*args, **kwargs)
+
+        for name in self.get_required_fields():
+            if field := self.fields.get(name):
+                field.required = True
+                field.allow_null = False
+
+                if hasattr(field, "allow_blank"):
+                    field.allow_blank = False
+
+    @staticmethod
+    def get_required_fields() -> list[str]:
+        """Return the list of fields which are required by the plugin settings."""
+        from plugin.registry import registry
+
+        plugin = registry.get_plugin("shopping-cart")
+
+        if plugin is None:
+            return []
+
+        return plugin.required_fields()
+
     def validate_quantity(self, quantity):
         """Quantity must be strictly positive."""
         if quantity <= 0:
