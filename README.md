@@ -49,7 +49,7 @@ Any user with *view* permission for purchase orders can add items to the cart. E
 | Required Date | Date by which the items are needed (optional) |
 | Reason | Reason for the purchase (optional) |
 | Project Code | Project code for the purchase (optional) |
-| Destination | Stock location where the received items should be placed (optional) |
+| Destination | Stock location where the received items should be placed (optional). Pre-filled from the default location of the part (or its category) |
 | User | The user who made the request (assigned automatically) |
 
 Items can also be added using the **Add to Cart** button in the page header, on the detail page of any active, purchaseable part, or of an active supplier part for a purchaseable part. When added from a supplier part page, the supplier part is pre-selected.

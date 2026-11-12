@@ -11,6 +11,7 @@ type PartActionContext = {
   part_name: string;
   units?: string;
   supplier_part?: number | null;
+  destination?: number | null;
 };
 
 /**
@@ -114,6 +115,14 @@ export async function addToCart({
       target_date: {},
       project_code: {
         hidden: !projectCodesEnabled
+      },
+      destination: {
+        // Pre-filled from the default location of the part (if available)
+        value: serverContext.destination ?? undefined,
+        filters: {
+          // Received items cannot be placed into a structural location
+          structural: false
+        }
       },
       reason: {}
     },

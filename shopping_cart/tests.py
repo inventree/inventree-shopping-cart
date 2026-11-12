@@ -566,6 +566,39 @@ class ShoppingCartPrimaryActionTest(ShoppingCartTestMixin, InvenTreeAPITestCase)
         # Note: The source file may be resolved to the hashed build output
         self.assertRegex(action["source"], r"/PartAction(-[\w-]+)?\.js:addToCart$")
 
+    def test_default_destination(self):
+        """The destination is pre-filled from the default location of the part."""
+        from part.models import PartCategory
+
+        # No default location
+        context = self.get_actions("part", self.part.pk)[0]["context"]
+        self.assertIsNone(context["destination"])
+
+        # Default location from the part category (including parent categories)
+        parent = PartCategory.objects.create(
+            name="Electronics", default_location=self.warehouse
+        )
+        category = PartCategory.objects.create(name="Passives", parent=parent)
+        self.part.category = category
+        self.part.save()
+
+        context = self.get_actions("part", self.part.pk)[0]["context"]
+        self.assertEqual(context["destination"], self.warehouse.pk)
+
+        # Default location of the part takes precedence
+        self.part.default_location = self.shelf
+        self.part.save()
+
+        context = self.get_actions("supplierpart", self.sp_a.pk)[0]["context"]
+        self.assertEqual(context["destination"], self.shelf.pk)
+
+        # Structural locations are ignored
+        self.part.default_location = self.structural
+        self.part.save()
+
+        context = self.get_actions("part", self.part.pk)[0]["context"]
+        self.assertIsNone(context["destination"])
+
     def test_supplier_part_page(self):
         """The button is displayed for supplier parts, with the supplier part pre-selected."""
         actions = self.get_actions("supplierpart", self.sp_a.pk)

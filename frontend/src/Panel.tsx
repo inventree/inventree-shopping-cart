@@ -128,7 +128,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
     [userId]
   );
 
-  const { entryFields, createEntryFields, setSelectedPart } =
+  const { entryFields, createEntryFields, setSelectedPart, resetCreateFields } =
     useCartEntryFields(context);
 
   const createEntryForm = context.forms.create({
@@ -661,7 +661,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         tooltip={t`Add item to cart`}
         tooltipAlignment='top-start'
         onClick={() => {
-          setSelectedPart(null);
+          resetCreateFields();
           createEntryForm.open();
         }}
       />

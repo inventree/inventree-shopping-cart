@@ -126,6 +126,13 @@ class ShoppingCart(AppMixin, UrlsMixin, UserInterfaceMixin, InvenTreePlugin):
         if part is None or not part.purchaseable or not part.active:
             return []
 
+        # Pre-fill the destination from the default location of the part (or its category)
+        # Items cannot be received into a structural location
+        destination = part.get_default_location()
+
+        if destination is not None and destination.structural:
+            destination = None
+
         return [
             {
                 "key": "add-to-cart",
@@ -138,6 +145,7 @@ class ShoppingCart(AppMixin, UrlsMixin, UserInterfaceMixin, InvenTreePlugin):
                     "part_name": part.full_name,
                     "units": part.units,
                     "supplier_part": supplier_part.pk if supplier_part else None,
+                    "destination": destination.pk if destination else None,
                 },
             }
         ]
