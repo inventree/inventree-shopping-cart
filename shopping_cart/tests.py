@@ -158,6 +158,79 @@ class ShoppingCartEntryTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
         )
         self.assertIn("destination", response.data)
 
+    def test_required_fields(self):
+        """Fields can be marked as required via the plugin settings."""
+        plugin = registry.get_plugin("shopping-cart")
+
+        fields = ["project_code", "destination", "reason"]
+
+        # By default, none of the fields are required
+        actions = self.options(CART_URL).data["actions"]["POST"]
+
+        for field in fields:
+            self.assertFalse(actions[field]["required"])
+
+        for key in ["REQUIRE_PROJECT_CODE", "REQUIRE_DESTINATION", "REQUIRE_REASON"]:
+            plugin.set_setting(key, True, None)
+
+        # Project codes must also be enabled for the project code to be required
+        InvenTreeSetting.set_setting("PROJECT_CODES_ENABLED", False, None)
+        actions = self.options(CART_URL).data["actions"]["POST"]
+        self.assertFalse(actions["project_code"]["required"])
+        self.assertTrue(actions["destination"]["required"])
+        self.assertTrue(actions["reason"]["required"])
+
+        InvenTreeSetting.set_setting("PROJECT_CODES_ENABLED", True, None)
+        actions = self.options(CART_URL).data["actions"]["POST"]
+
+        for field in fields:
+            self.assertTrue(actions[field]["required"])
+
+        # Missing, null or blank values are rejected
+        for data in [{}, {"project_code": None, "destination": None, "reason": "  "}]:
+            response = self.post(
+                CART_URL,
+                {"part": self.part.pk, "quantity": 1, **data},
+                expected_code=400,
+            )
+
+            for field in fields:
+                self.assertIn(field, response.data)
+
+        self.assertEqual(ShoppingCartEntry.objects.count(), 0)
+
+        response = self.post(
+            CART_URL,
+            {
+                "part": self.part.pk,
+                "quantity": 1,
+                "project_code": self.project.pk,
+                "destination": self.shelf.pk,
+                "reason": "Required",
+            },
+            expected_code=201,
+        )
+
+        # Required fields cannot be cleared from an existing entry
+        url = f"{CART_URL}{response.data['pk']}/"
+
+        for field in fields:
+            value = "" if field == "reason" else None
+            response = self.patch(url, {field: value}, expected_code=400)
+            self.assertIn(field, response.data)
+
+        # Other fields can still be edited
+        self.patch(url, {"quantity": 3}, expected_code=200)
+
+        # Each setting is independent
+        plugin.set_setting("REQUIRE_PROJECT_CODE", False, None)
+        plugin.set_setting("REQUIRE_REASON", False, None)
+
+        response = self.post(
+            CART_URL, {"part": self.part.pk, "quantity": 1}, expected_code=400
+        )
+        self.assertEqual(list(response.data.keys()), ["destination"])
+
     def test_edit_permissions(self):
         """Users can edit their own entries, but not those of other users."""
         mine = ShoppingCartEntry.objects.create(
