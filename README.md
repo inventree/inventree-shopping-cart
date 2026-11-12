@@ -49,6 +49,7 @@ Any user with *view* permission for purchase orders can add items to the cart. E
 | Required Date | Date by which the items are needed (optional) |
 | Reason | Reason for the purchase (optional) |
 | Project Code | Project code for the purchase (optional) |
+| Destination | Stock location where the received items should be placed (optional) |
 | User | The user who made the request (assigned automatically) |
 
 Items can also be added using the **Add to Cart** button in the page header, on the detail page of any active, purchaseable part, or of an active supplier part for a purchaseable part. When added from a supplier part page, the supplier part is pre-selected.
@@ -85,7 +86,7 @@ For each selected request, a supplier part is determined as follows:
 
 If a supplier part cannot be determined for any selected request, no changes are made.
 
-Each request becomes a separate line item. The requested quantity is converted to supplier pack quantity (rounded up to whole packs), and the required date, project code and reason are copied to the line item. If all of the selected requests share a single project code, it is also assigned to a newly created purchase order.
+Each request becomes a separate line item. The requested quantity is converted to supplier pack quantity (rounded up to whole packs), and the required date, project code, destination and reason are copied to the line item. If all of the selected requests share a single project code (or destination), it is also assigned to a newly created purchase order.
 
 Converted requests are removed from the cart.
 

@@ -19,6 +19,8 @@ from order.models import PurchaseOrder, PurchaseOrderLineItem
 from order.status_codes import PurchaseOrderStatus
 from part.models import Part
 from part.serializers import PartBriefSerializer
+from stock.models import StockLocation
+from stock.serializers import LocationBriefSerializer
 from users.serializers import UserSerializer
 
 from .models import ShoppingCartEntry
@@ -69,6 +71,8 @@ class ShoppingCartEntrySerializer(
             "reason",
             "project_code",
             "project_code_detail",
+            "destination",
+            "destination_detail",
             "user",
             "user_detail",
             "created",
@@ -88,6 +92,16 @@ class ShoppingCartEntrySerializer(
         label=_("Supplier Part"),
     )
 
+    destination = serializers.PrimaryKeyRelatedField(
+        queryset=StockLocation.objects.filter(structural=False),
+        allow_null=True,
+        required=False,
+        label=_("Destination"),
+        help_text=_(
+            "Stock location where the received items should be placed (optional)"
+        ),
+    )
+
     quantity = InvenTreeDecimalField()
 
     # Note: The "overdue" queryset annotation (see views.py) is used for ordering
@@ -101,6 +115,9 @@ class ShoppingCartEntrySerializer(
     )
     project_code_detail = ProjectCodeSerializer(
         source="project_code", read_only=True, allow_null=True
+    )
+    destination_detail = LocationBriefSerializer(
+        source="destination", read_only=True, allow_null=True
     )
     user_detail = UserSerializer(source="user", read_only=True, allow_null=True)
 
@@ -338,6 +355,7 @@ class ShoppingCartConvertSerializer(serializers.Serializer):
         lines = data["lines"]
 
         project_codes = {entry.project_code for entry, _sp in lines}
+        destinations = {entry.destination for entry, _sp in lines}
 
         try:
             with transaction.atomic():
@@ -361,6 +379,10 @@ class ShoppingCartConvertSerializer(serializers.Serializer):
                         project_code=project_codes.pop()
                         if len(project_codes) == 1
                         else None,
+                        # Only assign a destination to the order if it is unambiguous
+                        destination=destinations.pop()
+                        if len(destinations) == 1
+                        else None,
                     )
 
                 for entry, supplier_part in lines:
@@ -374,6 +396,7 @@ class ShoppingCartConvertSerializer(serializers.Serializer):
                         purchase_price=total_price / quantity if total_price else None,
                         target_date=entry.target_date,
                         project_code=entry.project_code,
+                        destination=entry.destination,
                         notes=entry.reason,
                         reference=self.line_reference(entry),
                     )

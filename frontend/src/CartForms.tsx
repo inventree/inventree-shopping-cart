@@ -53,6 +53,12 @@ export function useCartEntryFields(context: InvenTreePluginContext) {
       project_code: {
         hidden: !projectCodesEnabled
       },
+      destination: {
+        filters: {
+          // Received items cannot be placed into a structural location
+          structural: false
+        }
+      },
       reason: {}
     };
   }, [selectedPart, projectCodesEnabled]);

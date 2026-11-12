@@ -90,6 +90,11 @@ class ShoppingCartEntry(models.Model):
                     "supplier_part": _("Supplier part is not active")
                 })
 
+        if self.destination_id and self.destination.structural:
+            raise ValidationError({
+                "destination": _("Items cannot be received into a structural location")
+            })
+
         if self.quantity is not None and self.quantity <= 0:
             raise ValidationError({"quantity": _("Quantity must be greater than zero")})
 
@@ -143,6 +148,18 @@ class ShoppingCartEntry(models.Model):
         related_name="shopping_cart_entries",
         verbose_name=_("Project Code"),
         help_text=_("Project code for this purchase request"),
+    )
+
+    destination = models.ForeignKey(
+        "stock.StockLocation",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="shopping_cart_entries",
+        verbose_name=_("Destination"),
+        help_text=_(
+            "Stock location where the received items should be placed (optional)"
+        ),
     )
 
     user = models.ForeignKey(

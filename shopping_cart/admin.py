@@ -15,8 +15,9 @@ class ShoppingCartEntryAdmin(admin.ModelAdmin):
         "quantity",
         "target_date",
         "project_code",
+        "destination",
         "user",
         "created",
     )
     list_filter = ("user", "project_code")
-    raw_id_fields = ("part", "supplier_part")
+    raw_id_fields = ("part", "supplier_part", "destination")
