@@ -79,6 +79,7 @@ class ShoppingCartEntryMixin:
             "supplier_part",
             "supplier_part__supplier",
             "project_code",
+            "destination",
             "user",
         )
 
@@ -98,7 +99,7 @@ class ShoppingCartEntryFilter(rest_filters.FilterSet):
         """Meta options for this filter set."""
 
         model = ShoppingCartEntry
-        fields = ["part", "supplier_part", "project_code", "user"]
+        fields = ["part", "supplier_part", "project_code", "destination", "user"]
 
     mine = rest_filters.BooleanFilter(label="Mine", method="filter_mine")
 
@@ -194,6 +195,7 @@ class ShoppingCartEntryList(
         "target_date",
         "overdue",
         "project_code",
+        "destination",
         "user",
         "created",
     ]
@@ -203,6 +205,7 @@ class ShoppingCartEntryList(
         "supplier": "supplier_part__supplier__name",
         "supplier_part": "supplier_part__SKU",
         "project_code": "project_code__code",
+        "destination": "destination__pathstring",
         "user": "user__username",
     }
 

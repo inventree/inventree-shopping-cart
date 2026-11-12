@@ -101,6 +101,12 @@ msgid "Required Date"
 msgstr ""
 
 #: src/Panel.tsx
+#: src/Panel.tsx
+#: src/Panel.tsx
+msgid "Destination"
+msgstr ""
+
+#: src/Panel.tsx
 msgid "Purchase Order Updated"
 msgstr ""
 
@@ -176,6 +182,10 @@ msgstr ""
 
 #: src/Panel.tsx
 msgid "Show requests which can be ordered from a supplier"
+msgstr ""
+
+#: src/Panel.tsx
+msgid "Filter by destination location"
 msgstr ""
 
 #: src/Panel.tsx

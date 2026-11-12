@@ -128,7 +128,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
     [userId]
   );
 
-  const { entryFields, createEntryFields, setSelectedPart } =
+  const { entryFields, createEntryFields, setSelectedPart, resetCreateFields } =
     useCartEntryFields(context);
 
   const createEntryForm = context.forms.create({
@@ -278,6 +278,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
                 <Table.Th>{t`Supplier Part`}</Table.Th>
                 <Table.Th>{t`Quantity`}</Table.Th>
                 <Table.Th>{t`Required Date`}</Table.Th>
+                <Table.Th>{t`Destination`}</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -292,6 +293,9 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
                   <Table.Td>{record.supplier_part_detail?.SKU ?? '-'}</Table.Td>
                   <Table.Td>{formatQuantity(record)}</Table.Td>
                   <Table.Td>{record.target_date ?? '-'}</Table.Td>
+                  <Table.Td>
+                    {record.destination_detail?.pathstring ?? '-'}
+                  </Table.Td>
                 </Table.Tr>
               ))}
             </Table.Tbody>
@@ -503,6 +507,12 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         render: (record: any) => record.project_code_detail?.code ?? '-'
       },
       {
+        accessor: 'destination',
+        title: t`Destination`,
+        sortable: true,
+        render: (record: any) => record.destination_detail?.pathstring ?? '-'
+      },
+      {
         accessor: 'reason',
         title: t`Reason`
       },
@@ -557,6 +567,15 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         apiFilter: { is_supplier: true },
         model: ModelType.company,
         modelRenderer: (instance: any) => instance.name
+      },
+      {
+        name: 'destination',
+        label: t`Destination`,
+        description: t`Filter by destination location`,
+        type: 'api',
+        apiUrl: apiUrl(ApiEndpoints.stock_location_list),
+        model: ModelType.stocklocation,
+        modelRenderer: (instance: any) => instance.pathstring
       },
       {
         name: 'project_code',
@@ -642,7 +661,7 @@ function ShoppingCartPanel({ context }: { context: InvenTreePluginContext }) {
         tooltip={t`Add item to cart`}
         tooltipAlignment='top-start'
         onClick={() => {
-          setSelectedPart(null);
+          resetCreateFields();
           createEntryForm.open();
         }}
       />

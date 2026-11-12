@@ -13,7 +13,7 @@ from order.models import PurchaseOrder
 from order.status_codes import PurchaseOrderStatus
 from part.models import Part
 from plugin import registry
-from stock.models import StockItem
+from stock.models import StockItem, StockLocation
 
 from .models import ShoppingCartEntry
 
@@ -62,6 +62,10 @@ class ShoppingCartTestMixin:
 
         cls.project = ProjectCode.objects.create(code="PRJ-001")
 
+        cls.warehouse = StockLocation.objects.create(name="Warehouse")
+        cls.shelf = StockLocation.objects.create(name="Shelf", parent=cls.warehouse)
+        cls.structural = StockLocation.objects.create(name="Building", structural=True)
+
         cls.other_user = User.objects.create_user(username="other", password="password")
 
 
@@ -84,6 +88,7 @@ class ShoppingCartEntryTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
                 "quantity": 5,
                 "reason": "For the prototype",
                 "project_code": self.project.pk,
+                "destination": self.shelf.pk,
                 "target_date": "2026-12-01",
                 "user": self.other_user.pk,
             },
@@ -94,11 +99,20 @@ class ShoppingCartEntryTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
         self.assertEqual(entry.user, self.user)
         self.assertEqual(entry.quantity, 5)
         self.assertEqual(entry.project_code, self.project)
+        self.assertEqual(entry.destination, self.shelf)
         self.assertIsNotNone(entry.created)
 
         response = self.get(CART_URL)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["part_detail"]["name"], "Resistor")
+        self.assertEqual(
+            response.data[0]["destination_detail"]["pathstring"], "Warehouse/Shelf"
+        )
+
+        # Destination is optional, and can be cleared
+        response = self.patch(f"{CART_URL}{entry.pk}/", {"destination": None})
+        entry.refresh_from_db()
+        self.assertIsNone(entry.destination)
 
     def test_options(self):
         """Form metadata is available to users with purchase order 'view' access."""
@@ -135,6 +149,14 @@ class ShoppingCartEntryTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
             expected_code=400,
         )
         self.assertIn("supplier_part", response.data)
+
+        # Structural locations cannot be selected as a destination
+        response = self.post(
+            CART_URL,
+            {"part": self.part.pk, "quantity": 1, "destination": self.structural.pk},
+            expected_code=400,
+        )
+        self.assertIn("destination", response.data)
 
     def test_edit_permissions(self):
         """Users can edit their own entries, but not those of other users."""
@@ -370,9 +392,14 @@ class ShoppingCartConvertTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
             user=self.other_user,
             reason="Urgent",
             project_code=self.project,
+            destination=self.shelf,
         )
         e2 = ShoppingCartEntry.objects.create(
-            part=self.cable, quantity=25, user=self.user, project_code=self.project
+            part=self.cable,
+            quantity=25,
+            user=self.user,
+            project_code=self.project,
+            destination=self.shelf,
         )
 
         # Not selected - should remain in the cart
@@ -387,12 +414,14 @@ class ShoppingCartConvertTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
         self.assertEqual(order.supplier, self.supplier)
         self.assertEqual(order.created_by, self.user)
         self.assertEqual(order.project_code, self.project)
+        self.assertEqual(order.destination, self.shelf)
         self.assertEqual(order.lines.count(), 2)
 
         line = order.lines.get(part=self.sp_a)
         self.assertEqual(line.quantity, 4)
         self.assertEqual(line.notes, "Urgent")
         self.assertEqual(line.project_code, self.project)
+        self.assertEqual(line.destination, self.shelf)
         self.assertIn("other", line.reference)
 
         # 25 units in packs of 10 = 3 packs
@@ -401,6 +430,37 @@ class ShoppingCartConvertTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
 
         self.assertFalse(ShoppingCartEntry.objects.filter(pk__in=[e1.pk, e2.pk]))
         self.assertTrue(ShoppingCartEntry.objects.filter(pk=e3.pk).exists())
+
+    def test_convert_mixed_destinations(self):
+        """Each line item receives the destination of its cart entry.
+
+        The new order only receives a destination if all entries share it.
+        """
+        e1 = ShoppingCartEntry.objects.create(
+            part=self.part, quantity=1, destination=self.shelf
+        )
+        e2 = ShoppingCartEntry.objects.create(
+            part=self.cable, quantity=10, destination=self.warehouse
+        )
+        e3 = ShoppingCartEntry.objects.create(
+            part=self.part, supplier_part=self.sp_a, quantity=2
+        )
+
+        response = self.post(
+            CONVERT_URL,
+            {"items": [e1.pk, e2.pk, e3.pk], "supplier": self.supplier.pk},
+        )
+
+        order = PurchaseOrder.objects.get(pk=response.data["pk"])
+        self.assertIsNone(order.destination)
+
+        self.assertEqual(
+            order.lines.get(part=self.sp_a, quantity=1).destination, self.shelf
+        )
+        self.assertEqual(
+            order.lines.get(part=self.sp_cable).destination, self.warehouse
+        )
+        self.assertIsNone(order.lines.get(part=self.sp_a, quantity=2).destination)
 
     def test_convert_existing_order(self):
         """Convert entries into an existing pending purchase order."""
@@ -505,6 +565,39 @@ class ShoppingCartPrimaryActionTest(ShoppingCartTestMixin, InvenTreeAPITestCase)
         self.assertEqual(action["context"]["part"], self.part.pk)
         # Note: The source file may be resolved to the hashed build output
         self.assertRegex(action["source"], r"/PartAction(-[\w-]+)?\.js:addToCart$")
+
+    def test_default_destination(self):
+        """The destination is pre-filled from the default location of the part."""
+        from part.models import PartCategory
+
+        # No default location
+        context = self.get_actions("part", self.part.pk)[0]["context"]
+        self.assertIsNone(context["destination"])
+
+        # Default location from the part category (including parent categories)
+        parent = PartCategory.objects.create(
+            name="Electronics", default_location=self.warehouse
+        )
+        category = PartCategory.objects.create(name="Passives", parent=parent)
+        self.part.category = category
+        self.part.save()
+
+        context = self.get_actions("part", self.part.pk)[0]["context"]
+        self.assertEqual(context["destination"], self.warehouse.pk)
+
+        # Default location of the part takes precedence
+        self.part.default_location = self.shelf
+        self.part.save()
+
+        context = self.get_actions("supplierpart", self.sp_a.pk)[0]["context"]
+        self.assertEqual(context["destination"], self.shelf.pk)
+
+        # Structural locations are ignored
+        self.part.default_location = self.structural
+        self.part.save()
+
+        context = self.get_actions("part", self.part.pk)[0]["context"]
+        self.assertIsNone(context["destination"])
 
     def test_supplier_part_page(self):
         """The button is displayed for supplier parts, with the supplier part pre-selected."""
