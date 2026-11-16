@@ -140,7 +140,7 @@ class ShoppingCartEntrySerializer(
     @staticmethod
     def get_required_fields() -> list[str]:
         """Return the list of fields which are required by the plugin settings."""
-        from plugin.registry import registry
+        from plugin import registry
 
         plugin = registry.get_plugin("shopping-cart")
 
