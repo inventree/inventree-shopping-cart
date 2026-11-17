@@ -78,6 +78,8 @@ class ShoppingCartEntryMixin:
             "part",
             "supplier_part",
             "supplier_part__supplier",
+            "supplier_part__manufacturer_part",
+            "supplier_part__manufacturer_part__manufacturer",
             "project_code",
             "destination",
             "user",

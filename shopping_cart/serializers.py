@@ -55,6 +55,17 @@ class ShoppingCartEntrySerializer(
     - Imported entries are always assigned to the importing user
     """
 
+    # Additional fields which are only included when exporting data
+    export_only_fields = [
+        "part_name",
+        "part_ipn",
+        "part_description",
+        "supplier_name",
+        "SKU",
+        "manufacturer_name",
+        "MPN",
+    ]
+
     class Meta:
         """Meta options for this serializer."""
 
@@ -76,6 +87,14 @@ class ShoppingCartEntrySerializer(
             "user",
             "user_detail",
             "created",
+            # Export only fields
+            "part_name",
+            "part_ipn",
+            "part_description",
+            "supplier_name",
+            "SKU",
+            "manufacturer_name",
+            "MPN",
         ]
 
         read_only_fields = ["user", "created", "overdue"]
@@ -120,6 +139,48 @@ class ShoppingCartEntrySerializer(
         source="destination", read_only=True, allow_null=True
     )
     user_detail = UserSerializer(source="user", read_only=True, allow_null=True)
+
+    # Export only fields
+    part_name = serializers.CharField(
+        source="part.name", read_only=True, label=_("Part Name")
+    )
+
+    part_ipn = serializers.CharField(
+        source="part.IPN", read_only=True, allow_null=True, label=_("IPN")
+    )
+
+    part_description = serializers.CharField(
+        source="part.description",
+        read_only=True,
+        allow_null=True,
+        label=_("Part Description"),
+    )
+
+    # Note: allow_null is required, as the supplier part (and manufacturer part) are optional
+    supplier_name = serializers.CharField(
+        source="supplier_part.supplier.name",
+        read_only=True,
+        allow_null=True,
+        label=_("Supplier Name"),
+    )
+
+    SKU = serializers.CharField(
+        source="supplier_part.SKU", read_only=True, allow_null=True, label=_("SKU")
+    )
+
+    manufacturer_name = serializers.CharField(
+        source="supplier_part.manufacturer_part.manufacturer.name",
+        read_only=True,
+        allow_null=True,
+        label=_("Manufacturer Name"),
+    )
+
+    MPN = serializers.CharField(
+        source="supplier_part.manufacturer_part.MPN",
+        read_only=True,
+        allow_null=True,
+        label=_("MPN"),
+    )
 
     def __init__(self, *args, **kwargs):
         """Mark fields as required, based on the plugin settings.

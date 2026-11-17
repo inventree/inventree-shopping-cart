@@ -6,7 +6,7 @@ from decimal import Decimal
 from django.contrib.auth.models import User
 
 from common.models import InvenTreeSetting, ProjectCode
-from company.models import Company, SupplierPart
+from company.models import Company, ManufacturerPart, SupplierPart
 from InvenTree.helpers import current_date
 from InvenTree.unit_test import InvenTreeAPITestCase
 from order.models import PurchaseOrder
@@ -285,19 +285,58 @@ class ShoppingCartEntryTest(ShoppingCartTestMixin, InvenTreeAPITestCase):
 
     def test_export(self):
         """Test data export for cart entries."""
+        manufacturer = Company.objects.create(name="Maker", is_manufacturer=True)
+        self.part.IPN = "RES-001"
+        self.part.save()
+        self.sp_a.manufacturer_part = ManufacturerPart.objects.create(
+            part=self.part, manufacturer=manufacturer, MPN="MPN-123"
+        )
+        self.sp_a.save()
+
         ShoppingCartEntry.objects.create(
             part=self.part, supplier_part=self.sp_a, quantity=5, user=self.user
         )
+        # Entry without a supplier part
         ShoppingCartEntry.objects.create(
             part=self.cable, quantity=2, user=self.other_user
         )
 
+        export_cols = [
+            "Part Name",
+            "IPN",
+            "Part Description",
+            "Supplier Name",
+            "SKU",
+            "Manufacturer Name",
+            "MPN",
+        ]
+
         with self.export_data(CART_URL) as data_file:
-            self.process_csv(
+            data = self.process_csv(
                 data_file,
-                required_cols=["Part", "Supplier Part", "Quantity"],
+                required_cols=["Part", "Supplier Part", "Quantity", *export_cols],
                 required_rows=2,
             )
+
+        rows = {row["Part Name"]: row for row in data}
+
+        resistor = rows["Resistor"]
+        self.assertEqual(resistor["IPN"], "RES-001")
+        self.assertEqual(resistor["Part Description"], "A resistor")
+        self.assertEqual(resistor["Supplier Name"], "Supplier A")
+        self.assertEqual(resistor["SKU"], "RES-A")
+        self.assertEqual(resistor["Manufacturer Name"], "Maker")
+        self.assertEqual(resistor["MPN"], "MPN-123")
+
+        cable = rows["Cable"]
+        self.assertEqual(cable["Part Description"], "A cable")
+        for col in ["Supplier Name", "SKU", "Manufacturer Name", "MPN"]:
+            self.assertFalse(cable[col])
+
+        # Export only fields are not included in the regular API response
+        response = self.get(CART_URL, expected_code=200)
+        for field in ["part_name", "SKU", "MPN"]:
+            self.assertNotIn(field, response.data[0])
 
     def test_import_permission(self):
         """Importing data requires the 'change' permission for purchase orders.
